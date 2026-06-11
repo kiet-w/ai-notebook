@@ -1,5 +1,7 @@
 import CategoryTemplate from '@/components/templates/CategoryTemplate';
 
+export const dynamic = 'force-dynamic';
+
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
 }
@@ -18,5 +20,5 @@ function normalizeCategoryParam(param: string): string {
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const category = (await params).category;
   const normalizedCategory = normalizeCategoryParam(category);
-  return <CategoryTemplate category={normalizedCategory} />;
+  return <CategoryTemplate key={normalizedCategory} category={normalizedCategory} />;
 }

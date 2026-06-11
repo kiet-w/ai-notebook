@@ -3,6 +3,11 @@ import axios from 'axios';
 
 const apiInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+  headers: {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  }
 });
 
 type ApiCategory = 'COOKING' | 'TECH' | 'LEARNING' | 'WORK' | 'FINANCE' | 'OTHER';
@@ -54,7 +59,7 @@ export function normalizeNote(note: ApiNote): Note {
 
 export const api = {
   async fetchNotes(): Promise<Note[]> {
-    const res = await apiInstance.get('/notes');
+    const res = await apiInstance.get(`/notes?t=${Date.now()}`);
     const notes = res.data as ApiNote[];
     return notes.map(normalizeNote);
   },
@@ -83,7 +88,7 @@ export const api = {
   },
 
   async fetchNoteById(id: string): Promise<Note> {
-    const res = await apiInstance.get(`/notes/${id}`);
+    const res = await apiInstance.get(`/notes/${id}?t=${Date.now()}`);
     return normalizeNote(res.data as ApiNote);
   },
 
