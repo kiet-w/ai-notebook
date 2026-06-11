@@ -375,3 +375,18 @@ Nếu để mở trang web trong thời gian dài (máy tính ngủ hoặc mất
    - Tại [HomeTemplate.tsx](file:///home/baudui/Downloads/project/brain/frontend/src/components/templates/HomeTemplate.tsx) và [CategoryTemplate.tsx](file:///home/baudui/Downloads/project/brain/frontend/src/components/templates/CategoryTemplate.tsx), thêm lắng nghe các sự kiện `focus` và `online` trên `window` để tự động làm mới dữ liệu dưới nền (silent background refresh) giúp ứng dụng tự hồi phục dữ liệu.
    - Thêm state `error` và hiển thị một panel báo lỗi kết nối trực quan kèm nút **"Thử lại ngay"** khi request thất bại (thay vì kẹt vô hạn ở skeletons loader).
 
+---
+
+## BUG #12 — Cột "Full Content & Analysis" hiển thị đường dẫn ảnh (URL) thay vì nội dung phân tích chi tiết
+
+### Triệu chứng
+Khi người dùng mở Modal chi tiết của một ghi chú hình ảnh đã được AI phân tích thành công (trạng thái `COMPLETED`, đã có tiêu đề và tóm tắt), cột "Full Content & Analysis" ở bên trái hiển thị nguyên văn đường dẫn ảnh tuyệt đối dạng `http://localhost:3001/uploads/...` thay vì văn bản phân tích Markdown chi tiết. Đồng thời, ảnh đính kèm cũng không được hiển thị đầy đủ bên cạnh.
+
+### Nguyên nhân
+1. **Cơ chế fallback trong frontend:** Để tối ưu hóa hiệu năng, danh sách ghi chú tải từ backend được cắt bớt trường dữ liệu nặng (`content`). Ở frontend, hàm chuẩn hóa `normalizeNote` trong `api.ts` có cơ chế fallback: nếu `content` trống, nó sẽ tạm thời lấy `userInput` hoặc `url` làm nội dung hiển thị tạm thời. Điều này khiến ghi chú trong danh sách ở client có thuộc tính `note.content` chính là đường dẫn ảnh.
+2. **Bỏ qua bước gọi API chi tiết (Skip fetch):** Khi mở Modal chi tiết (`NoteDetailModal.tsx`), code kiểm tra điều kiện tải dữ liệu bằng câu lệnh: `if (!isOpen || !noteId || noteContent)`. Vì `noteContent` (đường dẫn ảnh tạm thời) là một chuỗi khác rỗng (truthy), Modal lầm tưởng ghi chú này đã có sẵn nội dung đầy đủ, dẫn đến việc bỏ qua bước gọi API `api.fetchNoteById(noteId)` để tải dữ liệu Markdown thật từ cơ sở dữ liệu.
+
+### Cách sửa
+1. **Nhận diện nội dung tạm thời (Placeholder content):** Viết thêm một hàm helper `isPlaceholderContent` trong `NoteDetailModal.tsx` để xác định xem nội dung hiện tại có phải là placeholder tạm thời (đường dẫn ảnh bắt đầu bằng `http://`, `https://`, `/uploads/` hoặc thông báo `Processing file: `) hay không.
+2. **Buộc tải lại dữ liệu khi phát hiện placeholder:** Cập nhật điều kiện tải dữ liệu chi tiết của Modal: chỉ khi nội dung hiện tại không phải là placeholder thì mới bỏ qua bước tải. Ngược lại, nếu là placeholder, Modal sẽ tự động gọi API `api.fetchNoteById` để tải toàn bộ nội dung Markdown thật từ database về hiển thị.
+3. **Đảm bảo tiêu chuẩn ESLint:** Loại bỏ lệnh gọi `setLoading(true)` đồng bộ trực tiếp bên trong `useEffect` (để tránh lỗi `react-hooks/set-state-in-effect`), thay vào đó khởi tạo trạng thái `loading` tương ứng ngay trong hàm khởi tạo `useState(isOpen && isPlaceholder)` và khi chuyển đổi ghi chú.
