@@ -104,8 +104,9 @@ export class AiService {
           '{\n' +
           '  "title": "A string representing a concise title",\n' +
           '  "summary": "A string summarizing the content in 2-3 sentences",\n' +
-          '  "bullets": ["An array of strings representing key bullet points"],\n' +
-          '  "category": "Must be one of: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER"\n' +
+          '  "bullets": ["An array of strings representing key bullet points/keywords"],\n' +
+          '  "category": "Must be one of: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER",\n' +
+          '  "content": "A detailed Markdown document in Vietnamese explaining the core concepts. Structure it exactly as:\n\n### 💡 Phân tích & Giải thích chi tiết (5W1H)\n\n#### 1. Giải thích từ khóa & Khái niệm\n- **[Từ khóa 1]**: Giải thích chi tiết theo 5W1H (Who - Ai liên quan/sử dụng, What - Nó là gì, Where - Áp dụng ở đâu, When - Khi nào cần, Why - Tại sao quan trọng, How - Cách thức hoạt động). Giữ nguyên thuật ngữ tiếng Anh, viết giải thích bằng tiếng Việt.\n- **[Từ khóa 2]**: Giải thích chi tiết theo 5W1H...\n\n#### 2. Phân tích mối quan hệ\n- [Giải thích chi tiết mối quan hệ giữa các khái niệm, ví dụ tại sao vai trò này lại là sự kết hợp của các vai trò kia, hoặc cách chúng bổ trợ cho nhau]."\n' +
           '}';
         const prompt = `Analyze the following document and extract its key information. Ensure you choose the most relevant category from: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER.\n\nDocument Content:\n${content}`;
         cleanText = await this.callGroq(systemInstruction, prompt, true);
@@ -119,8 +120,9 @@ export class AiService {
               '{\n' +
               '  "title": "A string representing a concise title",\n' +
               '  "summary": "A string summarizing the content in 2-3 sentences",\n' +
-              '  "bullets": ["An array of strings representing key bullet points"],\n' +
-              '  "category": "Must be one of: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER"\n' +
+              '  "bullets": ["An array of strings representing key bullet points/keywords"],\n' +
+              '  "category": "Must be one of: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER",\n' +
+              '  "content": "A detailed Markdown document in Vietnamese explaining the core concepts. Structure it exactly as:\n\n### 💡 Phân tích & Giải thích chi tiết (5W1H)\n\n#### 1. Giải thích từ khóa & Khái niệm\n- **[Từ khóa 1]**: Giải thích chi tiết theo 5W1H (Who - Ai liên quan/sử dụng, What - Nó là gì, Where - Áp dụng ở đâu, When - Khi nào cần, Why - Tại sao quan trọng, How - Cách thức hoạt động). Giữ nguyên thuật ngữ tiếng Anh, viết giải thích bằng tiếng Việt.\n- **[Từ khóa 2]**: Giải thích chi tiết theo 5W1H...\n\n#### 2. Phân tích mối quan hệ\n- [Giải thích chi tiết mối quan hệ giữa các khái niệm, ví dụ tại sao vai trò này lại là sự kết hợp của các vai trò kia, hoặc cách chúng bổ trợ cho nhau]."\n' +
               '}',
             responseMimeType: 'application/json',
             responseSchema: zodToJsonSchema(AiAnalysisSchema as any) as any,
@@ -162,15 +164,15 @@ export class AiService {
           'Rules:\n' +
           '- Keep ALL technical terms, algorithm names, framework names, and proper nouns in ENGLISH (do not translate them).\n' +
           '- Write explanations, summaries, and descriptions in Vietnamese.\n' +
-          '- For the "content" field: produce a COMPLETE Markdown document that faithfully reproduces every heading, sub-heading, bullet point, statistic, and label visible in the image. Do NOT summarize — transcribe everything.\n' +
-          '- For the "bullets" field: list every key fact, metric, or concept shown (e.g. "Binary Search: O(log n), ~7 comparisons for 100 elements").\n\n' +
+          '- For the "content" field: produce a COMPLETE Markdown document in Vietnamese containing the extracted text followed by 5W1H keyword analysis and visual diagram analysis. Structure it exactly as:\n\n### 🖼️ Nội dung trích xuất từ ảnh\n[Văn bản, nhãn, số liệu chi tiết trích xuất từ ảnh]\n\n---\n\n### 💡 Phân tích & Giải thích chi tiết (5W1H)\n\n#### 1. Giải thích từ khóa & Khái niệm\n- **[Từ khóa 1]**: Giải thích chi tiết theo 5W1H (Who - Ai liên quan/sử dụng, What - Nó là gì, Where - Áp dụng ở đâu, When - Khi nào cần, Why - Tại sao quan trọng, How - Cách thức hoạt động). Giữ nguyên thuật ngữ tiếng Anh, viết giải thích bằng tiếng Việt.\n- **[Từ khóa 2]**: Giải thích chi tiết theo 5W1H...\n\n#### 2. Phân tích sơ đồ & Hình ảnh (Visual & Diagram Analysis)\n- [Giải thích chi tiết các mối quan hệ cấu trúc, luồng hoặc biểu đồ trong ảnh. Ví dụ: Nếu là sơ đồ Venn, giải thích chi tiết tại sao phần giao nhau (ví dụ: Forward Deployed Engineer) lại là sự kết hợp của các vòng tròn bên ngoài (Platform Engineer, Software Engineer, Solutions Architect) và vai trò đó thừa hưởng, bổ sung năng lực gì từ các vai trò gốc].\n' +
+          '- For the "bullets" field: list every key fact, metric, or concept shown (e.g. "Binary Search: O(log n)").\n\n' +
           'You MUST respond with a JSON object matching the following structure:\n' +
           '{\n' +
           '  "title": "Concise title of the image content (Vietnamese ok)",\n' +
           '  "summary": "2-3 câu tóm tắt nội dung bức ảnh bằng tiếng Việt, giữ thuật ngữ kỹ thuật tiếng Anh",\n' +
-          '  "bullets": ["Mỗi bullet là một thông tin CỤ THỂ trích từ ảnh, ví dụ: Binary Search: O(log n) time complexity, ~7 comparisons for 100 elements"],\n' +
+          '  "bullets": ["Mỗi bullet là một thông tin CỤ THỂ trích từ ảnh"],\n' +
           '  "category": "Must be one of: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER",\n' +
-          '  "content": "Toàn bộ nội dung ảnh được viết lại hoàn chỉnh bằng Markdown. Dùng ## cho tiêu đề lớn, ### cho tiêu đề nhỏ, - cho bullet. Giữ nguyên thuật ngữ kỹ thuật tiếng Anh. Giải thích từng mục bằng tiếng Việt."\n' +
+          '  "content": "Nội dung Markdown đầy đủ theo cấu trúc đã hướng dẫn ở trên."\n' +
           '}';
         const prompt = 'Please read EVERY piece of text visible in this image carefully. Extract and reproduce ALL content — every heading, sub-heading, bullet point, number, statistic, label, and description. Do not skip anything. Write explanations in Vietnamese but keep all technical terms in English.';
         cleanText = await this.callGroq(systemInstruction, prompt, true, { data: imageBuffer, mimeType });
@@ -190,19 +192,9 @@ export class AiService {
             systemInstruction: 'You are a meticulous knowledge extraction assistant for a Second Brain application.\n\n' +
               'Your job is to READ EVERY WORD visible in the image and extract ALL content in full detail.\n' +
               'Rules:\n' +
-              '- Keep ALL technical terms, algorithm names, framework names, and proper nouns in ENGLISH.\n' +
-              '- Write explanations and descriptions in Vietnamese.\n' +
-              '- For the "content" field: produce a COMPLETE Markdown document that faithfully reproduces every heading, sub-heading, bullet point, statistic, and label visible in the image. Do NOT summarize — transcribe everything and explain each item in Vietnamese.\n' +
-              '- For the "bullets" field: list every key fact, metric, or concept shown with its specific details.\n\n' +
-              'You MUST respond with a JSON object matching the following structure:\n' +
-              '{\n' +
-              '  "title": "Tiêu đề ngắn gọn của nội dung ảnh",\n' +
-              '  "summary": "2-3 câu tóm tắt nội dung bức ảnh bằng tiếng Việt, giữ thuật ngữ kỹ thuật tiếng Anh",\n' +
-              '  "bullets": ["Mỗi bullet là một thông tin CỤ THỂ trích từ ảnh với đầy đủ số liệu, ví dụ: Binary Search: O(log n) time complexity, ~7 comparisons for 100 elements"],\n' +
-              '  "category": "Must be one of: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER",\n' +
-              '  "content": "Toàn bộ nội dung ảnh viết lại hoàn chỉnh bằng Markdown với ## tiêu đề lớn, ### tiêu đề nhỏ, bullet points. Giữ nguyên thuật ngữ kỹ thuật. Giải thích từng mục bằng tiếng Việt."\n' +
-              '}',
-
+              '- Keep ALL technical terms, algorithm names, framework names, and proper nouns in ENGLISH (do not translate them).\n' +
+              '- Write explanations, summaries, and descriptions in Vietnamese.\n' +
+              '- For the "content" field: produce a COMPLETE Markdown document in Vietnamese containing the extracted text followed by 5W1H keyword analysis and visual diagram analysis. Structure it exactly as:\n\n### 🖼️ Nội dung trích xuất từ ảnh\n[Văn bản, nhãn, số liệu chi tiết trích xuất từ ảnh]\n\n---\n\n### 💡 Phân tích & Giải thích chi tiết (5W1H)\n\n#### 1. Giải thích từ khóa & Khái niệm\n- **[Từ khóa 1]**: Giải thích chi tiết theo 5W1H (Who - Ai liên quan/sử dụng, What - Nó là gì, Where - Áp dụng ở đâu, When - Khi nào cần, Why - Tại sao quan trọng, How - Cách thức hoạt động). Giữ nguyên thuật ngữ tiếng Anh, viết giải thích bằng tiếng Việt.\n- **[Từ khóa 2]**: Giải thích chi tiết theo 5W1H...\n\n#### 2. Phân tích sơ đồ & Hình ảnh (Visual & Diagram Analysis)\n- [Giải thích chi tiết các mối quan hệ cấu trúc, luồng hoặc biểu đồ trong ảnh. Ví dụ: Nếu là sơ đồ Venn, giải thích chi tiết tại sao phần giao nhau (ví dụ: Forward Deployed Engineer) lại là sự kết hợp của các vòng tròn bên ngoài (Platform Engineer, Software Engineer, Solutions Architect) và vai trò đó thừa hưởng, bổ sung năng lực gì từ các vai trò gốc].\n',
             responseMimeType: 'application/json',
             responseSchema: zodToJsonSchema(AiAnalysisSchema as any) as any,
           },

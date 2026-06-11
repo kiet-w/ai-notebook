@@ -75,7 +75,7 @@ export class NotesService {
         aiSummary: aiResult.summary,
         aiBullets: aiResult.bullets,
         category: note.category !== 'OTHER' ? note.category : aiResult.category,
-        content,
+        content: aiResult.content || content,
         status: Status.COMPLETED,
       });
 
@@ -174,7 +174,7 @@ export class NotesService {
         aiSummary: aiResult.summary,
         aiBullets: aiResult.bullets,
         category: note.category !== 'OTHER' ? note.category : aiResult.category,
-        content: markdownContent,
+        content: aiResult.content || markdownContent,
         status: Status.COMPLETED,
       });
 

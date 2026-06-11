@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Note } from '@/types/note';
 import { RefreshCw, AlertCircle, Clock } from 'lucide-react';
 import Badge from '@/components/atoms/Badge';
@@ -23,6 +24,7 @@ const isImageUrl = (url: string) => {
 
 export default function NoteCard({ note }: NoteCardProps) {
   // Removed PROCESSING block so content shows immediately without skeleton
+  const [isExpanded, setIsExpanded] = useState(false);
 
   if (note.status === 'FAILED') {
     return (
@@ -93,11 +95,39 @@ export default function NoteCard({ note }: NoteCardProps) {
       )}
 
       {note.content && (
-        <div className="mb-5 p-3.5 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700/50">
-          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Original Note</p>
-          <p className="text-[14px] text-foreground/90 italic leading-relaxed line-clamp-3">
-            &quot;{note.content}&quot;
-          </p>
+        <div className="mb-4">
+          {!isExpanded ? (
+            <div>
+              <div className="p-3.5 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700/50">
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Preview</p>
+                <p className="text-[14px] text-foreground/90 italic leading-relaxed line-clamp-2">
+                  {note.content}
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsExpanded(true)}
+                className="mt-2 text-xs font-semibold text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-300 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>Xem giải thích 5W1H & Nội dung đầy đủ</span>
+                <span>↓</span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-5 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/20 border border-zinc-200 dark:border-zinc-750 flex flex-col gap-3">
+              <div className="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-700">
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Nội dung chi tiết & Giải thích 5W1H</p>
+                <button 
+                  onClick={() => setIsExpanded(false)}
+                  className="text-xs font-semibold text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+                >
+                  Thu gọn ↑
+                </button>
+              </div>
+              <div className="max-h-[500px] overflow-y-auto pr-1 space-y-1 scrollbar-thin">
+                {renderMarkdown(note.content)}
+              </div>
+            </div>
+          )}
         </div>
       )}
       
@@ -134,6 +164,49 @@ export default function NoteCard({ note }: NoteCardProps) {
         </div>
       </div>
     </div>
-
   );
+}
+
+function parseBoldText(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function renderMarkdown(text: string) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return lines.map((line, index) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#### ')) {
+      return <h5 key={index} className="text-xs font-bold text-foreground mt-4 mb-1.5 uppercase tracking-wider">{trimmed.replace('#### ', '')}</h5>;
+    }
+    if (trimmed.startsWith('### ')) {
+      return <h4 key={index} className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mt-5 mb-2 pb-1 border-b border-border">{trimmed.replace('### ', '')}</h4>;
+    }
+    if (trimmed.startsWith('## ')) {
+      return <h3 key={index} className="text-base font-bold text-foreground mt-6 mb-3">{trimmed.replace('## ', '')}</h3>;
+    }
+    if (trimmed.startsWith('- ')) {
+      const bulletContent = trimmed.replace('- ', '');
+      return (
+        <ul key={index} className="list-disc pl-5 my-1">
+          <li className="text-sm text-foreground/80 leading-relaxed">
+            {parseBoldText(bulletContent)}
+          </li>
+        </ul>
+      );
+    }
+    if (trimmed === '') {
+      return <div key={index} className="h-2" />;
+    }
+    if (trimmed === '---') {
+      return <hr key={index} className="my-4 border-border" />;
+    }
+    return <p key={index} className="text-sm text-foreground/80 my-1 leading-relaxed">{parseBoldText(line)}</p>;
+  });
 }
