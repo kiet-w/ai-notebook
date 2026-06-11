@@ -7,13 +7,34 @@ import NoteCard from '@/components/organisms/NoteCard';
 import Sidebar from '@/components/organisms/Sidebar';
 import { api, Note } from '@/utils/api';
 import { useSSE } from '@/hooks/useSSE';
-import { Inbox } from 'lucide-react';
+import { Inbox, AlertCircle } from 'lucide-react';
 // import SearchSection from '@/components/organisms/SearchSection';
 
 export default function HomeTemplate() {
   const router = useRouter();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadNotes = useCallback((showSkeleton = true) => {
+    if (showSkeleton) {
+      setLoading(true);
+    }
+    setError(null);
+    api.fetchNotes()
+      .then(setNotes)
+      .catch((err) => {
+        console.error('Failed to load notes:', err);
+        if (showSkeleton) {
+          setError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối.');
+        }
+      })
+      .finally(() => {
+        if (showSkeleton) {
+          setLoading(false);
+        }
+      });
+  }, []);
 
   const handleNoteUpdated = useCallback((updatedNote: Note) => {
     setNotes((prev) => {
@@ -28,11 +49,21 @@ export default function HomeTemplate() {
   useSSE(handleNoteUpdated);
 
   useEffect(() => {
-    api.fetchNotes()
-      .then(setNotes)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    loadNotes(true);
+
+    const handleFocus = () => {
+      // Silent background refresh when tab is focused or network status changes
+      loadNotes(false);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleFocus);
+    };
+  }, [loadNotes]);
 
   const handleCapture = async (content: string) => {
     // Optimistic Update
@@ -144,6 +175,22 @@ export default function HomeTemplate() {
                 {[1, 2, 3].map((i) => (
                     <div key={i} className="p-6 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-sm animate-pulse h-40" />
                 ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-20 border border-red-100 dark:border-red-900/20 bg-red-50/10 dark:bg-red-950/5 rounded-2xl p-8 max-w-md mx-auto">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/25 text-red-500 mb-4">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Lỗi kết nối máy chủ</h3>
+                <p className="text-secondary-text text-sm mb-6">
+                  {error}
+                </p>
+                <button
+                  onClick={() => loadNotes(true)}
+                  className="px-5 py-2.5 rounded-xl bg-foreground text-background font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                >
+                  Thử lại ngay
+                </button>
               </div>
             ) : filteredNotes.length === 0 ? (
               <div className="text-center py-32 border-2 border-dashed border-border rounded-2xl bg-zinc-50/30 dark:bg-zinc-900/10">
