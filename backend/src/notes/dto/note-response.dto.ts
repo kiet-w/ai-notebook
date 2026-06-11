@@ -10,5 +10,6 @@ export class NoteResponseDto {
   content: string | null;
   category: Category;
   status: Status;
+  isRead: boolean;
   createdAt: Date;
 }

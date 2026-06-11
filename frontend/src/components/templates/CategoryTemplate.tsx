@@ -1,14 +1,18 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import NoteInput from '@/components/molecules/NoteInput';
+import dynamic from 'next/dynamic';
+
 import NoteCard from '@/components/organisms/NoteCard';
 import Sidebar from '@/components/organisms/Sidebar';
 import { api, Note } from '@/utils/api';
+import { Category } from '@/types/note';
 import { useSSE } from '@/hooks/useSSE';
 import { Inbox, AlertCircle } from 'lucide-react';
-// import SearchSection from '@/components/organisms/SearchSection';
+import { groupNotesByDate } from '@/utils/date';
+
+const NoteDetailModal = dynamic(() => import('@/components/organisms/NoteDetailModal'), { ssr: false });
 
 interface CategoryTemplateProps {
   category: string;
@@ -17,19 +21,35 @@ interface CategoryTemplateProps {
 export default function CategoryTemplate({ category }: CategoryTemplateProps) {
   const router = useRouter();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const localNoteIdsRef = useRef<Set<string>>(new Set());
+  const [activeNoteForModal, setActiveNoteForModal] = useState<Note | null>(null);
+
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
   const loadNotes = useCallback((showSkeleton = true) => {
     if (showSkeleton) {
       setLoading(true);
     }
     setError(null);
-    api.fetchNotes()
-      .then(setNotes)
+    setHasMore(true);
+
+    Promise.all([
+      api.fetchNotes(category as Category, 25),
+      api.fetchUnreadCounts(),
+    ])
+      .then(([fetchedNotes, counts]) => {
+        setNotes(fetchedNotes);
+        setUnreadCounts(counts);
+        if (fetchedNotes.length < 25) {
+          setHasMore(false);
+        }
+      })
       .catch((err) => {
-        console.error(`Failed to load category notes:`, err);
+        console.error(`Failed to load category data:`, err);
         if (showSkeleton) {
           setError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối.');
         }
@@ -39,26 +59,58 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
           setLoading(false);
         }
       });
-  }, []);
+  }, [category]);
+
+  const loadMoreNotes = useCallback(() => {
+    if (loadingMore || !hasMore || loading || notes.length === 0) return;
+
+    setLoadingMore(true);
+    const lastNoteId = notes[notes.length - 1]?.id;
+
+    api.fetchNotes(category as Category, 25, lastNoteId)
+      .then((newNotes) => {
+        if (newNotes.length < 25) {
+          setHasMore(false);
+        }
+        setNotes((prev) => {
+          const prevIds = new Set(prev.map((n) => n.id));
+          const filteredNew = newNotes.filter((n) => !prevIds.has(n.id));
+          return [...prev, ...filteredNew];
+        });
+      })
+      .catch((err) => {
+        console.error('Failed to load more notes:', err);
+      })
+      .finally(() => {
+        setLoadingMore(false);
+      });
+  }, [category, notes, loadingMore, hasMore, loading]);
 
   const handleNoteUpdated = useCallback((updatedNote: Note) => {
     setNotes((prev) => {
       const exists = prev.some((n) => n.id === updatedNote.id);
       if (exists) {
+        if (updatedNote.category !== category) {
+          return prev.filter((n) => n.id !== updatedNote.id);
+        }
         return prev.map((n) => (n.id === updatedNote.id ? updatedNote : n));
       }
-      // Note arrived via SSE but wasn't in the list yet — prepend it
-      return [updatedNote, ...prev];
+      if (updatedNote.category === category) {
+        return [updatedNote, ...prev];
+      }
+      return prev;
     });
-  }, []);
+    api.fetchUnreadCounts().then(setUnreadCounts).catch(console.error);
+  }, [category]);
 
   useSSE(handleNoteUpdated);
 
   useEffect(() => {
-    loadNotes(true);
+    setTimeout(() => {
+      loadNotes(true);
+    }, 0);
 
     const handleFocus = () => {
-      // Silent background refresh when tab is focused or network status changes
       loadNotes(false);
     };
 
@@ -71,75 +123,32 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
     };
   }, [loadNotes]);
 
-  const handleCapture = async (content: string) => {
-    // Optimistic Update
-    const tempId = Math.random().toString(36).substring(7);
-    const optimisticNote: Note = {
-      id: tempId,
-      content,
-      status: 'PROCESSING',
-      createdAt: new Date().toISOString(),
-      category: category as any,
+  // Infinite Scroll Intersection Observer
+  useEffect(() => {
+    const currentTarget = observerRef.current;
+    if (!currentTarget) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && hasMore && !loading) {
+          loadMoreNotes();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(currentTarget);
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
     };
+  }, [loadMoreNotes, loadingMore, hasMore, loading]);
 
-    setNotes((prev) => [optimisticNote, ...prev]);
-
-    try {
-      const realNote = await api.createNote(content, category as any);
-      localNoteIdsRef.current.add(realNote.id);
-      setNotes((prev) =>
-        prev.map((n) => (n.id === tempId ? realNote : n))
-      );
-
-      window.setTimeout(() => {
-        api.fetchNotes().then(setNotes).catch(console.error);
-      }, 1200);
-    } catch (error) {
-      console.error('Failed to capture note:', error);
-      setNotes((prev) =>
-        prev.map((n) =>
-          n.id === tempId ? { ...n, status: 'FAILED' } : n
-        )
-      );
-    }
-  };
-
-  const handleUpload = async (file: File) => {
-    // Optimistic Update
-    const tempId = Math.random().toString(36).substring(7);
-    const optimisticNote: Note = {
-      id: tempId,
-      content: `Processing uploaded file: ${file.name}...`,
-      title: file.name,
-      status: 'PROCESSING',
-      createdAt: new Date().toISOString(),
-      category: category as any,
-    };
-
-    setNotes((prev) => [optimisticNote, ...prev]);
-
-    try {
-      const realNote = await api.uploadFile(file, category as any);
-      localNoteIdsRef.current.add(realNote.id);
-      // Replace optimistic note with real one
-      setNotes((prev) =>
-        prev.map((n) => (n.id === tempId ? realNote : n))
-      );
-
-      window.setTimeout(() => {
-        api.fetchNotes().then(setNotes).catch(console.error);
-      }, 1200);
-    } catch (error) {
-      console.error('Failed to upload file:', error);
-      setNotes((prev) =>
-        prev.map((n) =>
-          n.id === tempId ? { ...n, status: 'FAILED' } : n
-        )
-      );
-    }
-  };
-
-  const filteredNotes = notes.filter((n) => n.category === category || n.status === 'PROCESSING' || n.status === 'FAILED' || localNoteIdsRef.current.has(n.id));
+  const groupedNotes = useMemo(() => {
+    return groupNotesByDate(notes);
+  }, [notes]);
 
   const handleSelectCategory = (cat: string | null) => {
     if (cat) {
@@ -165,10 +174,11 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
     <div className="flex h-screen bg-background font-sans overflow-hidden">
       <Sidebar 
         selectedCategory={category} 
-        onSelectCategory={handleSelectCategory} 
+        onSelectCategory={handleSelectCategory}
+        unreadCounts={unreadCounts}
       />
       <main className="flex-1 overflow-y-auto scroll-smooth">
-        <div className="max-w-3xl mx-auto px-6 py-16 sm:px-12">
+        <div className="w-[90%] max-w-[1400px] mx-auto py-16">
           <header className="mb-12">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xl shadow-sm border border-border">
@@ -183,21 +193,15 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
             </p>
           </header>
 
-          {/* <SearchSection /> */}
-
-          <div className="sticky top-0 z-10 py-4 bg-background/80 backdrop-blur-md mb-8">
-            <NoteInput onSubmit={handleCapture} onUpload={handleUpload} />
-          </div>
-
-          <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {loading ? (
-              <div className="space-y-6">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="p-6 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-sm animate-pulse h-40" />
+              <>
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-sm animate-pulse h-48" />
                 ))}
-              </div>
+              </>
             ) : error ? (
-              <div className="text-center py-20 border border-red-100 dark:border-red-900/20 bg-red-50/10 dark:bg-red-950/5 rounded-2xl p-8 max-w-md mx-auto">
+              <div className="text-center py-20 border border-red-100 dark:border-red-900/20 bg-red-50/10 dark:bg-red-950/5 rounded-2xl p-8 max-w-md mx-auto col-span-full">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/25 text-red-500 mb-4">
                   <AlertCircle className="w-6 h-6" />
                 </div>
@@ -212,24 +216,51 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
                   Thử lại ngay
                 </button>
               </div>
-            ) : filteredNotes.length === 0 ? (
-              <div className="text-center py-32 border-2 border-dashed border-border rounded-2xl bg-zinc-50/30 dark:bg-zinc-900/10">
+            ) : notes.length === 0 ? (
+              <div className="text-center py-32 border-2 border-dashed border-border rounded-2xl bg-zinc-50/30 dark:bg-zinc-900/10 col-span-full">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 mb-4 text-zinc-400">
                   <Inbox className="w-6 h-6" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-1">No notes yet</h3>
                 <p className="text-secondary-text max-w-xs mx-auto text-sm">
-                  You don't have any notes in the {category} category.
+                  You don&apos;t have any notes in the {category} category.
                 </p>
               </div>
             ) : (
-              filteredNotes.map((note) => (
-                <NoteCard key={note.id} note={note} />
-              ))
+              groupedNotes.flatMap((group) => [
+                <div 
+                  key={`header-${group.dateKey}`} 
+                  className="col-span-full flex items-center gap-4 mt-6 first:mt-0 mb-1 select-none"
+                >
+                  <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">
+                    {group.label}
+                  </span>
+                  <div className="h-[1px] flex-1 bg-zinc-200/60 dark:bg-zinc-800/40" />
+                </div>,
+                ...group.notes.map((note) => (
+                  <NoteCard key={note.id} note={note} onOpenModal={setActiveNoteForModal} />
+                ))
+              ])
             )}
           </div>
+
+          {hasMore && !error && notes.length > 0 && (
+            <div ref={observerRef} className="w-full flex justify-center py-8">
+              {loadingMore && (
+                <div className="w-6 h-6 rounded-full border-2 border-zinc-350 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100 animate-spin" />
+              )}
+            </div>
+          )}
         </div>
       </main>
+
+      {activeNoteForModal && (
+        <NoteDetailModal
+          note={activeNoteForModal}
+          isOpen={!!activeNoteForModal}
+          onClose={() => setActiveNoteForModal(null)}
+        />
+      )}
     </div>
   );
 }

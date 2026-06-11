@@ -12,10 +12,13 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  Patch,
+  Query,
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { NoteResponseDto } from './dto/note-response.dto';
+import { FindAllNotesQueryDto } from './dto/find-all-notes-query.dto';
 import { Observable, map, merge, interval } from 'rxjs';
 import { Note, Category } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -30,17 +33,14 @@ export class NotesController {
       map((event) => ({
         type: 'note-updated',
         data: event,
-      } as MessageEvent)),
+      })),
     );
 
     const keepAliveStream$ = interval(15000).pipe(
-      map(
-        () =>
-          ({
-            type: 'ping',
-            data: { timestamp: Date.now() },
-          } as MessageEvent),
-      ),
+      map(() => ({
+        type: 'ping',
+        data: { timestamp: Date.now() },
+      })),
     );
 
     return merge(dataStream$, keepAliveStream$);
@@ -68,9 +68,20 @@ export class NotesController {
   }
 
   @Get()
-  async findAll(): Promise<NoteResponseDto[]> {
-    const notes = await this.notesService.findAll();
+  async findAll(
+    @Query() query: FindAllNotesQueryDto,
+  ): Promise<NoteResponseDto[]> {
+    const notes = await this.notesService.findAll({
+      category: query.category,
+      limit: query.limit,
+      cursor: query.cursor,
+    });
     return notes.map((note) => this.toResponseDto(note));
+  }
+
+  @Get('unread-counts')
+  async getUnreadCounts(): Promise<Record<string, number>> {
+    return this.notesService.getUnreadCounts();
   }
 
   @Post('search')
@@ -92,10 +103,18 @@ export class NotesController {
     return this.toResponseDto(note);
   }
 
+  @Patch(':id/read')
+  async markAsRead(@Param('id') id: string): Promise<NoteResponseDto> {
+    const note = await this.notesService.markAsRead(id);
+    return this.toResponseDto(note);
+  }
+
   private toResponseDto(note: Note): NoteResponseDto {
     let url = note.url;
     if (url && url.startsWith('/uploads/')) {
-      const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || '3001'}`;
+      const baseUrl =
+        process.env.BACKEND_URL ||
+        `http://localhost:${process.env.PORT || '3001'}`;
       url = `${baseUrl}${url}`;
     }
 
@@ -106,11 +125,14 @@ export class NotesController {
       aiTitle: note.aiTitle,
       aiSummary: note.aiSummary,
       aiBullets: Array.isArray(note.aiBullets)
-        ? note.aiBullets.filter((item): item is string => typeof item === 'string')
+        ? note.aiBullets.filter(
+            (item): item is string => typeof item === 'string',
+          )
         : null,
       content: note.content,
       category: note.category,
       status: note.status,
+      isRead: note.isRead,
       createdAt: note.createdAt,
     };
   }

@@ -6,15 +6,19 @@ import * as cheerio from 'cheerio';
 export class ScraperService {
   async scrape(url: string): Promise<{ title: string; content: string }> {
     try {
-      const { data } = await axios.get(url);
+      const { data } = await axios.get(url, {
+        timeout: 10000, // 10 seconds timeout
+        maxContentLength: 10 * 1024 * 1024, // max 10MB response size
+      });
       const $ = cheerio.load(data);
 
       const title = $('title').text().trim() || 'No Title';
-      
+
       // Try to find main content
-      let content = $('main').text().trim() || 
-                    $('article').text().trim() || 
-                    $('body').text().trim();
+      let content =
+        $('main').text().trim() ||
+        $('article').text().trim() ||
+        $('body').text().trim();
 
       // Clean up whitespace
       content = content.replace(/\s+/g, ' ').trim();

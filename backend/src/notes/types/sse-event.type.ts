@@ -8,5 +8,6 @@ export interface NoteUpdatedEvent {
   aiSummary: string | null;
   aiBullets: string[] | null;
   content: string | null;
+  isRead: boolean;
   createdAt: Date;
 }

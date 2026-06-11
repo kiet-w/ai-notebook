@@ -19,6 +19,8 @@
 | 8 | Tích hợp Groq API (llama-3.1-8b-instant) | ✅ Hoàn thành |
 | 9 | Fix lỗi vision model 400 error | ✅ Hoàn thành |
 | 10 | Cải thiện prompt trích xuất chi tiết từ ảnh | ✅ Hoàn thành |
+| 11 | Tối ưu hóa hiệu năng chuyên sâu (Paging, Caching, Virtualization, next/image) | ✅ Hoàn thành |
+| 12 | Layout Modal chi tiết Side-by-side & Zoom cho ảnh đính kèm | ✅ Hoàn thành |
 
 ---
 
@@ -29,16 +31,22 @@
 |------|---------------|
 | `backend/.env` | Cập nhật API key: OpenRouter → Groq |
 | `backend/src/ai/ai.service.ts` | Refactor toàn bộ: dual-routing Groq/Gemini, analyzeImage, prompt OCR chi tiết |
-| `backend/src/notes/notes.service.ts` | Thêm image detection, route ảnh sang analyzeImage, fix aiTitle priority |
+| `backend/src/notes/notes.service.ts` | Thêm image detection, route ảnh sang analyzeImage, fix aiTitle priority, tích hợp in-memory cache lưu danh sách note |
 | `backend/src/notes/notes.service.spec.ts` | Cập nhật mock và assertion cho content field |
 | `backend/src/notes/dto/note-response.dto.ts` | Thêm field `content` |
 | `backend/src/notes/types/sse-event.type.ts` | Thêm field `content` vào NoteUpdatedEvent |
+| `backend/src/notes/repositories/notes.repository.ts` | Thêm phân trang cursor-based và tối giản trường select để tiết kiệm payload |
+| `backend/src/notes/notes.controller.ts` | Chuyển đổi API findAll sang sử dụng FindAllNotesQueryDto (hỗ trợ limit, cursor) |
 
 ### Frontend
 | File | Mô tả thay đổi |
 |------|---------------|
 | `frontend/src/components/molecules/NoteInput.tsx` | Thêm handler `handlePaste` cho Ctrl+V ảnh |
-| `frontend/src/utils/api.ts` | Thêm field `content` vào `ApiNote` type, fix `normalizeNote` |
+| `frontend/src/utils/api.ts` | Thêm field `content` vào `ApiNote` type, fix `normalizeNote`, hỗ trợ limit/cursor trong fetchNotes |
+| `frontend/src/components/organisms/NoteDetailModal.tsx` | Tải nội dung chi tiết on-demand, layout side-by-side cho ảnh ngang (landscape), tính năng click-to-zoom và cuộn ảnh |
+| `frontend/src/components/templates/CategoryTemplate.tsx` | Tích hợp IntersectionObserver hỗ trợ Infinite Scroll và loading skeletons |
+| `frontend/src/components/templates/HomeTemplate.tsx` | Tối ưu hóa số lượng unread count tải thông qua SSE và API song song |
+| `frontend/src/components/organisms/NoteCard.tsx` | Chuyển đổi sang `next/image` cùng sizes prop, tối ưu relative path conversion |
 
 ---
 
@@ -47,3 +55,4 @@
 - [bug-fixes.md](./bug-fixes.md) — Chi tiết từng lỗi và cách sửa
 - [features.md](./features.md) — Chi tiết từng tính năng đã implement
 - [api-integration.md](./api-integration.md) — Kiến trúc AI API: Groq + Gemini
+- [performance-optimization.md](./performance-optimization.md) — Chi tiết tối ưu hóa hiệu năng hệ thống chuyên sâu

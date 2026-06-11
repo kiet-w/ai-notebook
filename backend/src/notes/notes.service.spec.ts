@@ -103,6 +103,7 @@ describe('NotesService', () => {
             aiSummary: 'Summary',
             aiBullets: ['One', 'Two'],
             content: 'Content',
+            createdAt: expect.any(Date),
           });
           done();
         },
@@ -135,7 +136,9 @@ describe('NotesService', () => {
         updatedAt: new Date(),
       };
 
-      (scraperService.scrape as jest.Mock).mockRejectedValue(new Error(errorMessage));
+      (scraperService.scrape as jest.Mock).mockRejectedValue(
+        new Error(errorMessage),
+      );
       (repository.updateStatus as jest.Mock).mockResolvedValue(failedNote);
 
       service.getEventStream().subscribe({
@@ -148,6 +151,7 @@ describe('NotesService', () => {
             aiSummary: null,
             aiBullets: null,
             content: null,
+            createdAt: expect.any(Date),
           });
           done();
         },

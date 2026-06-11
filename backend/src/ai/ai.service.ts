@@ -34,14 +34,12 @@ export class AiService {
     systemInstruction: string,
     prompt: string,
     jsonMode = false,
-    image?: { data: Buffer; mimeType: string }
+    image?: { data: Buffer; mimeType: string },
   ): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     this.logger.log(`Calling Groq API...`);
 
-    const messages: any[] = [
-      { role: 'system', content: systemInstruction }
-    ];
+    const messages: any[] = [{ role: 'system', content: systemInstruction }];
 
     if (image) {
       // Groq vision: try llama-4-scout-17b-16e-instruct with base64
@@ -55,30 +53,56 @@ export class AiService {
             {
               type: 'image_url',
               image_url: {
-                url: `data:${image.mimeType};base64,${image.data.toString('base64')}`
-              }
-            }
-          ]
+                url: `data:${image.mimeType};base64,${image.data.toString('base64')}`,
+              },
+            },
+          ],
         });
         const response = await axios.post(
           'https://api.groq.com/openai/v1/chat/completions',
-          { model: visionModel, messages, response_format: jsonMode ? { type: 'json_object' } : undefined, temperature: 0.2 },
-          { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
+          {
+            model: visionModel,
+            messages,
+            response_format: jsonMode ? { type: 'json_object' } : undefined,
+            temperature: 0.2,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 15000,
+          },
         );
         return response.data.choices[0].message.content || '';
       } catch (visionErr) {
-        const errDetail = visionErr.response?.data ? JSON.stringify(visionErr.response.data) : visionErr.message;
-        this.logger.warn(`Vision model failed (${errDetail}), falling back to text-only analysis`);
+        const errDetail = visionErr.response?.data
+          ? JSON.stringify(visionErr.response.data)
+          : visionErr.message;
+        this.logger.warn(
+          `Vision model failed (${errDetail}), falling back to text-only analysis`,
+        );
         // Fallback: instruct the text model to produce a generic note
         messages.length = 1; // reset to just system message
         messages.push({
           role: 'user',
-          content: `${prompt}\n\nNote: The image could not be processed directly. Please generate a generic structured note indicating that an image was uploaded but could not be read. Use category TECH.`
+          content: `${prompt}\n\nNote: The image could not be processed directly. Please generate a generic structured note indicating that an image was uploaded but could not be read. Use category TECH.`,
         });
         const fallbackResponse = await axios.post(
           'https://api.groq.com/openai/v1/chat/completions',
-          { model: 'llama-3.1-8b-instant', messages, response_format: jsonMode ? { type: 'json_object' } : undefined, temperature: 0.2 },
-          { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
+          {
+            model: 'llama-3.1-8b-instant',
+            messages,
+            response_format: jsonMode ? { type: 'json_object' } : undefined,
+            temperature: 0.2,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 15000,
+          },
         );
         return fallbackResponse.data.choices[0].message.content || '';
       }
@@ -86,8 +110,19 @@ export class AiService {
       messages.push({ role: 'user', content: prompt });
       const response = await axios.post(
         'https://api.groq.com/openai/v1/chat/completions',
-        { model: 'llama-3.1-8b-instant', messages, response_format: jsonMode ? { type: 'json_object' } : undefined, temperature: 0.2 },
-        { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' } }
+        {
+          model: 'llama-3.1-8b-instant',
+          messages,
+          response_format: jsonMode ? { type: 'json_object' } : undefined,
+          temperature: 0.2,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        },
       );
       return response.data.choices[0].message.content || '';
     }
@@ -99,7 +134,8 @@ export class AiService {
       let cleanText: string;
 
       if (process.env.GEMINI_API_KEY?.startsWith('gsk_')) {
-        const systemInstruction = 'You are a knowledge parsing assistant for a Second Brain application. You analyze documents and return structured JSON summaries.\n\n' +
+        const systemInstruction =
+          'You are a knowledge parsing assistant for a Second Brain application. You analyze documents and return structured JSON summaries.\n\n' +
           'IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.\n\n' +
           'You MUST respond with a JSON object matching the following structure:\n' +
           '{\n' +
@@ -116,7 +152,8 @@ export class AiService {
           model: 'gemini-2.0-flash',
           contents: `Analyze the following document and extract its key information. Ensure you choose the most relevant category from: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER.\n\nDocument Content:\n${content}`,
           config: {
-            systemInstruction: 'You are a knowledge parsing assistant for a Second Brain application. You analyze documents and return structured JSON summaries.\n\n' +
+            systemInstruction:
+              'You are a knowledge parsing assistant for a Second Brain application. You analyze documents and return structured JSON summaries.\n\n' +
               'IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.\n\n' +
               'You MUST respond with a JSON object matching the following structure:\n' +
               '{\n' +
@@ -127,7 +164,7 @@ export class AiService {
               '  "content": "A detailed Markdown document in Vietnamese explaining the core concepts. Structure it exactly as:\n\n### 💡 Phân tích & Giải thích chi tiết (5W1H)\n\n#### 1. Giải thích từ khóa & Khái niệm\n- **[Từ khóa 1]**: Giải thích chi tiết theo 5W1H (Who - Ai liên quan/sử dụng, What - Nó là gì, Where - Áp dụng ở đâu, When - Khi nào cần, Why - Tại sao quan trọng, How - Cách thức hoạt động). Giữ nguyên thuật ngữ tiếng Anh, viết giải thích bằng tiếng Việt.\n- **[Từ khóa 2]**: Giải thích chi tiết theo 5W1H...\n\n#### 2. Phân tích mối quan hệ\n- [Giải thích chi tiết mối quan hệ giữa các khái niệm, ví dụ tại sao vai trò này lại là sự kết hợp của các vai trò kia, hoặc cách chúng bổ trợ cho nhau]."\n' +
               '}',
             responseMimeType: 'application/json',
-            responseSchema: zodToJsonSchema(AiAnalysisSchema as any) as any,
+            responseSchema: zodToJsonSchema(AiAnalysisSchema as any),
           },
         });
 
@@ -138,12 +175,19 @@ export class AiService {
 
         cleanText = responseText.trim();
         if (cleanText.startsWith('```')) {
-          cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+          cleanText = cleanText
+            .replace(/^```(?:json)?\n?/i, '')
+            .replace(/\n?```$/, '')
+            .trim();
         }
       }
 
       const analysis = JSON.parse(cleanText);
-      if (analysis && typeof analysis.content === 'object' && analysis.content !== null) {
+      if (
+        analysis &&
+        typeof analysis.content === 'object' &&
+        analysis.content !== null
+      ) {
         analysis.content = convertObjectToMarkdown(analysis.content);
       }
       try {
@@ -158,13 +202,17 @@ export class AiService {
     }
   }
 
-  async analyzeImage(imageBuffer: Buffer, mimeType: string): Promise<AiAnalysis> {
+  async analyzeImage(
+    imageBuffer: Buffer,
+    mimeType: string,
+  ): Promise<AiAnalysis> {
     this.logger.log(`Analyzing image (${mimeType})...`);
     try {
       let cleanText: string;
 
       if (process.env.GEMINI_API_KEY?.startsWith('gsk_')) {
-        const systemInstruction = 'You are a meticulous knowledge extraction assistant for a Second Brain application.\n\n' +
+        const systemInstruction =
+          'You are a meticulous knowledge extraction assistant for a Second Brain application.\n\n' +
           'IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.\n\n' +
           'Your job is to READ EVERY WORD visible in the image and extract ALL content in full detail.\n' +
           'Rules:\n' +
@@ -180,8 +228,12 @@ export class AiService {
           '  "category": "Must be one of: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER",\n' +
           '  "content": "Nội dung Markdown đầy đủ theo cấu trúc đã hướng dẫn ở trên."\n' +
           '}';
-        const prompt = 'Please read EVERY piece of text visible in this image carefully. Extract and reproduce ALL content — every heading, sub-heading, bullet point, number, statistic, label, and description. Do not skip anything. Write explanations in Vietnamese but keep all technical terms in English.';
-        cleanText = await this.callGroq(systemInstruction, prompt, true, { data: imageBuffer, mimeType });
+        const prompt =
+          'Please read EVERY piece of text visible in this image carefully. Extract and reproduce ALL content — every heading, sub-heading, bullet point, number, statistic, label, and description. Do not skip anything. Write explanations in Vietnamese but keep all technical terms in English.';
+        cleanText = await this.callGroq(systemInstruction, prompt, true, {
+          data: imageBuffer,
+          mimeType,
+        });
       } else {
         const response = await this.ai.models.generateContent({
           model: 'gemini-2.0-flash',
@@ -195,7 +247,8 @@ export class AiService {
             'Please read EVERY piece of text visible in this image carefully. Extract and reproduce ALL content — every heading, sub-heading, bullet point, number, statistic, label, and description. Do not skip anything. Write explanations in Vietnamese but keep all technical terms in English.',
           ],
           config: {
-            systemInstruction: 'You are a meticulous knowledge extraction assistant for a Second Brain application.\n\n' +
+            systemInstruction:
+              'You are a meticulous knowledge extraction assistant for a Second Brain application.\n\n' +
               'IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.\n\n' +
               'Your job is to READ EVERY WORD visible in the image and extract ALL content in full detail.\n' +
               'Rules:\n' +
@@ -203,7 +256,7 @@ export class AiService {
               '- Write explanations, summaries, and descriptions in Vietnamese.\n' +
               '- For the "content" field: produce a COMPLETE Markdown document in Vietnamese containing the extracted text followed by 5W1H keyword analysis and visual diagram analysis. Structure it exactly as:\n\n### 🖼️ Nội dung trích xuất từ ảnh\n[Văn bản, nhãn, số liệu chi tiết trích xuất từ ảnh]\n\n---\n\n### 💡 Phân tích & Giải thích chi tiết (5W1H)\n\n#### 1. Giải thích từ khóa & Khái niệm\n- **[Từ khóa 1]**: Giải thích chi tiết theo 5W1H (Who - Ai liên quan/sử dụng, What - Nó là gì, Where - Áp dụng ở đâu, When - Khi nào cần, Why - Tại sao quan trọng, How - Cách thức hoạt động). Giữ nguyên thuật ngữ tiếng Anh, viết giải thích bằng tiếng Việt.\n- **[Từ khóa 2]**: Giải thích chi tiết theo 5W1H...\n\n#### 2. Phân tích sơ đồ & Hình ảnh (Visual & Diagram Analysis)\n- [Giải thích chi tiết các mối quan hệ cấu trúc, luồng hoặc biểu đồ trong ảnh. Ví dụ: Nếu là sơ đồ Venn, giải thích chi tiết tại sao phần giao nhau (ví dụ: Forward Deployed Engineer) lại là sự kết hợp của các vòng tròn bên ngoài (Platform Engineer, Software Engineer, Solutions Architect) và vai trò đó thừa hưởng, bổ sung năng lực gì từ các vai trò gốc].\n',
             responseMimeType: 'application/json',
-            responseSchema: zodToJsonSchema(AiAnalysisSchema as any) as any,
+            responseSchema: zodToJsonSchema(AiAnalysisSchema as any),
           },
         });
 
@@ -214,12 +267,19 @@ export class AiService {
 
         cleanText = responseText.trim();
         if (cleanText.startsWith('```')) {
-          cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+          cleanText = cleanText
+            .replace(/^```(?:json)?\n?/i, '')
+            .replace(/\n?```$/, '')
+            .trim();
         }
       }
 
       const analysis = JSON.parse(cleanText);
-      if (analysis && typeof analysis.content === 'object' && analysis.content !== null) {
+      if (
+        analysis &&
+        typeof analysis.content === 'object' &&
+        analysis.content !== null
+      ) {
         analysis.content = convertObjectToMarkdown(analysis.content);
       }
       try {
@@ -238,11 +298,15 @@ export class AiService {
     this.logger.log('Answering question...');
     try {
       const notesContext = notes
-        .map((n, i) => `[Note #${i + 1}] Title: ${n.aiTitle}\nCategory: ${n.category}\nContent:\n${n.content}`)
+        .map(
+          (n, i) =>
+            `[Note #${i + 1}] Title: ${n.aiTitle}\nCategory: ${n.category}\nContent:\n${n.content}`,
+        )
         .join('\n\n---\n\n');
 
       if (process.env.GEMINI_API_KEY?.startsWith('gsk_')) {
-        const systemInstruction = "You are an intelligent Second Brain assistant. Answer the user's question based on the provided notes context. Be concise and professional.";
+        const systemInstruction =
+          "You are an intelligent Second Brain assistant. Answer the user's question based on the provided notes context. Be concise and professional.";
         const prompt = `I have the following notes stored in my Second Brain:\n\n${notesContext}\n\nBased on these notes, please answer my question: "${query}"`;
         return await this.callGroq(systemInstruction, prompt, false);
       } else {
@@ -250,7 +314,8 @@ export class AiService {
           model: 'gemini-2.0-flash',
           contents: `I have the following notes stored in my Second Brain:\n\n${notesContext}\n\nBased on these notes, please answer my question: "${query}"`,
           config: {
-            systemInstruction: "You are an intelligent Second Brain assistant. Answer the user's question based on the provided notes context. Be concise and professional.",
+            systemInstruction:
+              "You are an intelligent Second Brain assistant. Answer the user's question based on the provided notes context. Be concise and professional.",
           },
         });
 
@@ -267,7 +332,12 @@ function convertObjectToMarkdown(obj: any, depth = 0): string {
   if (typeof obj === 'string') return obj;
   if (typeof obj !== 'object' || obj === null) return String(obj);
   if (Array.isArray(obj)) {
-    return obj.map(item => `${'  '.repeat(depth)}- ${convertObjectToMarkdown(item, depth + 1)}`).join('\n');
+    return obj
+      .map(
+        (item) =>
+          `${'  '.repeat(depth)}- ${convertObjectToMarkdown(item, depth + 1)}`,
+      )
+      .join('\n');
   }
   return Object.entries(obj)
     .map(([key, val]) => {

@@ -7,7 +7,10 @@ const SSE_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API
 
 export function useSSE(onNoteUpdated: (note: Note) => void) {
   const onNoteUpdatedRef = useRef(onNoteUpdated);
-  onNoteUpdatedRef.current = onNoteUpdated;
+
+  useEffect(() => {
+    onNoteUpdatedRef.current = onNoteUpdated;
+  }, [onNoteUpdated]);
 
   useEffect(() => {
     let eventSource: EventSource | null = null;

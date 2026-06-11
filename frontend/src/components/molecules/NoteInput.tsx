@@ -5,28 +5,43 @@ import { Send, Paperclip } from 'lucide-react';
 import Button from '../atoms/Button';
 import Input from '../atoms/Input';
 import Icon from '../atoms/Icon';
+import { Category } from '@/types/note';
+
+const CATEGORY_OPTIONS: { id: Category; emoji: string }[] = [
+  { id: 'Cooking', emoji: '🍳' },
+  { id: 'Tech', emoji: '💻' },
+  { id: 'Learning', emoji: '📚' },
+  { id: 'Work', emoji: '💼' },
+  { id: 'Finance', emoji: '💰' },
+  { id: 'Other', emoji: '📝' },
+];
 
 interface NoteInputProps {
-  onSubmit: (content: string) => void;
-  onUpload?: (file: File) => void;
+  onSubmit: (content: string, category?: Category) => void;
+  onUpload?: (file: File, category?: Category) => void;
   disabled?: boolean;
+  showCategorySelector?: boolean;
 }
 
-export default function NoteInput({ onSubmit, onUpload, disabled }: NoteInputProps) {
+export default function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector }: NoteInputProps) {
   const [content, setContent] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => {
+      setMounted(true);
+    }, 0);
   }, []);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!content.trim() || disabled) return;
-    onSubmit(content);
+    onSubmit(content, selectedCategory);
     setContent('');
+    setSelectedCategory(undefined);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -46,7 +61,7 @@ export default function NoteInput({ onSubmit, onUpload, disabled }: NoteInputPro
       const file = Array.from(files).find(f => f.type.startsWith('image/')) || files[0];
       if (file && onUpload) {
         e.preventDefault();
-        onUpload(file);
+        onUpload(file, selectedCategory);
       }
     }
   };
@@ -54,7 +69,7 @@ export default function NoteInput({ onSubmit, onUpload, disabled }: NoteInputPro
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && onUpload) {
-      onUpload(file);
+      onUpload(file, selectedCategory);
     }
     // Reset input value so same file can be selected again
     if (fileInputRef.current) {
@@ -86,6 +101,27 @@ export default function NoteInput({ onSubmit, onUpload, disabled }: NoteInputPro
           rows={1}
           disabled={disabled}
         />
+
+        {showCategorySelector && (
+          <div className="flex flex-wrap gap-1.5 px-4 py-2">
+            {CATEGORY_OPTIONS.map(({ id, emoji }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSelectedCategory(prev => prev === id ? undefined : id)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 border cursor-pointer ${
+                  selectedCategory === id
+                    ? 'bg-zinc-800 text-white border-zinc-700 dark:bg-zinc-200 dark:text-zinc-900 dark:border-zinc-300 shadow-sm'
+                    : 'bg-zinc-100 text-zinc-600 border-zinc-200/60 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700/40 dark:hover:bg-zinc-700/50'
+                }`}
+              >
+                <span className="text-sm leading-none select-none">{emoji}</span>
+                <span>{id}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex justify-between items-center px-4 pb-2">
           <div className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">
             {content.length > 0 ? `${content.length} characters` : 'Notion style capture'}

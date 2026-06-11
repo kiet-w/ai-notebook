@@ -26,7 +26,9 @@ describe('AiService', () => {
         category: 'TECH',
       }),
     };
-    jest.spyOn((service as any).ai.models, 'generateContent').mockResolvedValue(mockResponse);
+    jest
+      .spyOn((service as any).ai.models, 'generateContent')
+      .mockResolvedValue(mockResponse);
 
     const content = 'Some content to analyze';
     const result = await service.analyze(content);

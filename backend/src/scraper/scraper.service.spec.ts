@@ -40,12 +40,17 @@ describe('ScraperService', () => {
       title: 'Test Title',
       content: 'Main Heading This is the main content.',
     });
-    expect(mockedAxios.get).toHaveBeenCalledWith('https://example.com');
+    expect(mockedAxios.get).toHaveBeenCalledWith('https://example.com', {
+      timeout: 10000,
+      maxContentLength: 10 * 1024 * 1024,
+    });
   });
 
   it('should handle errors when scraping', async () => {
     mockedAxios.get.mockRejectedValue(new Error('Network Error'));
 
-    await expect(service.scrape('https://example.com')).rejects.toThrow('Failed to scrape URL');
+    await expect(service.scrape('https://example.com')).rejects.toThrow(
+      'Failed to scrape URL',
+    );
   });
 });

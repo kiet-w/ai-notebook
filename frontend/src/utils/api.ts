@@ -23,6 +23,7 @@ interface ApiNote {
   aiBullets: string[] | null;
   category: ApiCategory;
   status: Note['status'];
+  isRead: boolean;
   createdAt: string;
 }
 
@@ -54,15 +55,35 @@ export function normalizeNote(note: ApiNote): Note {
     summary: note.aiSummary ?? undefined,
     bullets: note.aiBullets ?? undefined,
     status: note.status,
+    isRead: note.isRead ?? false,
     createdAt: note.createdAt,
   };
 }
 
 export const api = {
-  async fetchNotes(): Promise<Note[]> {
-    const res = await apiInstance.get(`/notes?t=${Date.now()}`);
+  async fetchNotes(category?: Category, limit?: number, cursor?: string): Promise<Note[]> {
+    const apiCategory = category ? REVERSE_CATEGORY_MAP[category] : undefined;
+    const params = new URLSearchParams();
+    if (apiCategory) {
+      params.append('category', apiCategory);
+    }
+    if (limit !== undefined) {
+      params.append('limit', limit.toString());
+    }
+    if (cursor) {
+      params.append('cursor', cursor);
+    }
+    params.append('t', Date.now().toString());
+
+    const url = `/notes?${params.toString()}`;
+    const res = await apiInstance.get(url);
     const notes = res.data as ApiNote[];
     return notes.map(normalizeNote);
+  },
+
+  async fetchUnreadCounts(): Promise<Record<Category, number>> {
+    const res = await apiInstance.get(`/notes/unread-counts?t=${Date.now()}`);
+    return res.data as Record<Category, number>;
   },
 
   async createNote(content: string, category?: Category): Promise<Note> {
@@ -100,6 +121,11 @@ export const api = {
       answer: data.answer,
       relatedNotes: data.relatedNotes ? data.relatedNotes.map(normalizeNote) : undefined,
     };
+  },
+
+  async markAsRead(id: string): Promise<Note> {
+    const res = await apiInstance.patch(`/notes/${id}/read`);
+    return normalizeNote(res.data as ApiNote);
   },
 };
 

@@ -9,13 +9,7 @@ import { AiModule } from '../ai/ai.module';
 @Module({
   imports: [ScraperModule, ParserModule, AiModule],
   controllers: [NotesController],
-  providers: [
-    NotesRepository,
-    NotesService,
-  ],
-  exports: [
-    NotesRepository,
-    NotesService,
-  ],
+  providers: [NotesRepository, NotesService],
+  exports: [NotesRepository, NotesService],
 })
 export class NotesModule {}

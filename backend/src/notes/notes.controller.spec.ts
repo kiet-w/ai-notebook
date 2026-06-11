@@ -47,7 +47,10 @@ describe('NotesController', () => {
 
       controller.events().subscribe({
         next: (messageEvent) => {
-          expect(messageEvent).toEqual({ type: 'note-updated', data: mockEvent });
+          expect(messageEvent).toEqual({
+            type: 'note-updated',
+            data: mockEvent,
+          });
           done();
         },
       });
@@ -82,7 +85,7 @@ describe('NotesController', () => {
 
       const result = await controller.uploadFile(mockFile);
 
-      expect(service.createFromFile).toHaveBeenCalledWith(mockFile);
+      expect(service.createFromFile).toHaveBeenCalledWith(mockFile, undefined);
       expect(result.id).toBe('123');
       expect(result.userInput).toBe('Processing file: test.pdf');
     });

@@ -41,3 +41,8 @@ uploads/
 .superpowers/
 db.sqlite
 *.db
+
+# Agent directories
+.agent/
+.agents/
+skills-lock.json

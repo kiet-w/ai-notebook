@@ -10,5 +10,6 @@ export interface Note {
   summary?: string;
   bullets?: string[];
   status: Status;
+  isRead: boolean;
   createdAt: string;
 }

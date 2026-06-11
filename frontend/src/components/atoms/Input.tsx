@@ -2,7 +2,7 @@
 
 import React, { forwardRef } from 'react';
 
-interface InputProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+type InputProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 const Input = forwardRef<HTMLTextAreaElement, InputProps>(({ className = '', ...props }, ref) => {
   return (
