@@ -296,3 +296,82 @@ const filteredNotes = notes.filter((n) => n.category === category || n.status ==
         );
         ```
 
+---
+
+## BUG #9 — Giao diện không tải API trừ khi Refresh trang (API Caching & Category Navigation)
+
+### Triệu chứng
+Khi truy cập trang web lần đầu hoặc chuyển hướng giữa các danh mục (Categories) ở Sidebar, dữ liệu ghi chú không tự động được tải từ API (giao diện hiển thị rỗng hoặc không đổi) cho đến khi người dùng Refresh (F5) lại trình duyệt.
+
+### Nguyên nhân
+1. **Trình duyệt Cache các request GET:** Trình duyệt tự động cache kết quả của request `GET /notes` được thực hiện thông qua Axios (bao gồm cả các lượt gọi cập nhật tự động sau 1.2s từ `window.setTimeout`). Khi không có cấu hình chống cache, trình duyệt phục vụ dữ liệu đã lưu thay vì gửi request thực sự tới backend.
+2. **Next.js tái sử dụng component:** Khi chuyển hướng giữa các Category khác nhau (ví dụ: từ `/Cooking` sang `/Tech`), do Next.js App Router tái sử dụng instance của [CategoryTemplate](file:///home/baudui/Downloads/project/brain/frontend/src/components/templates/CategoryTemplate.tsx) (vì cùng chung file route `/[category]/page.tsx`), `useEffect` tải ghi chú với dependency array rỗng `[]` không được kích hoạt lại. Ngoài ra, ref `localNoteIdsRef` không được giải phóng gây rò rỉ note cũ sang danh mục mới.
+
+### Cách sửa
+
+1. **Backend & Frontend API Client — Vô hiệu hóa cache:**
+   Tại [api.ts](file:///home/baudui/Downloads/project/brain/frontend/src/utils/api.ts), thêm các headers vô hiệu hóa cache vào Axios instance và bổ sung tham số cache-buster (timestamp `?t=${Date.now()}`) vào các API GET:
+   ```typescript
+   const apiInstance = axios.create({
+     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+     headers: {
+       'Cache-Control': 'no-cache, no-store, must-revalidate',
+       'Pragma': 'no-cache',
+       'Expires': '0',
+     }
+   });
+
+   // Trong api.fetchNotes()
+   const res = await apiInstance.get(`/notes?t=${Date.now()}`);
+   // Trong api.fetchNoteById(id)
+   const res = await apiInstance.get(`/notes/${id}?t=${Date.now()}`);
+   ```
+2. **Frontend Router — Ép buộc Remount và cấu hình Dynamic:**
+   - Tại [/[category]/page.tsx](file:///home/baudui/Downloads/project/brain/frontend/src/app/[category]/page.tsx), thêm `export const dynamic = 'force-dynamic';` và truyền `key={normalizedCategory}` vào component `CategoryTemplate` để ép buộc React hủy bỏ và tạo mới component khi chuyển danh mục.
+   - Tại [/page.tsx](file:///home/baudui/Downloads/project/brain/frontend/src/app/page.tsx), thêm `export const dynamic = 'force-dynamic';`.
+
+---
+
+## BUG #10 — Zod validation failed: `invalid_type: expected string, received object` ở trường `content` khi phân tích ảnh
+
+### Triệu chứng
+Khi upload hình ảnh lên hệ thống để phân tích, backend báo lỗi validation của Zod và Note bị cập nhật trạng thái `FAILED`:
+```
+Image analysis failed: [{"expected": "string", "code": "invalid_type", "path": ["content"], "message": "Invalid input: expected string, received object"}]
+```
+
+### Nguyên nhân
+Mô hình AI (đặc biệt là các model Llama qua Groq khi không có sự kiểm soát schema nghiêm ngặt ở tầng API gateway của Google) đọc được các chỉ dẫn định dạng Markdown (`###`, `####`, `-`) trong system prompt và hiểu lầm rằng trường `"content"` cần được tổ chức thành một đối tượng JSON lồng nhau (nested JSON object) thay vì một chuỗi văn bản Markdown phẳng (escaped string). Khi Zod kiểm tra kiểu dữ liệu của JSON trả về, nó phát hiện kiểu `object` sai khác với kiểu `string` trong schema và ném lỗi xác thực.
+
+### Cách sửa
+1. **Backend Prompt — Thắt chặt chỉ định kiểu dữ liệu:**
+   Bổ sung dòng lưu ý rõ ràng vào system prompt cho cả Groq và Gemini tại [ai.service.ts](file:///home/baudui/Downloads/project/brain/backend/src/ai/ai.service.ts):
+   `IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.`
+2. **Backend Code — Cơ chế tự phục hồi dữ liệu (Self-Healing Parser):**
+   Tại [ai.service.ts](file:///home/baudui/Downloads/project/brain/backend/src/ai/ai.service.ts), viết hàm đệ quy `convertObjectToMarkdown` để chuyển đổi tự động bất kỳ JSON object nào thành Markdown phẳng nếu AI lỡ trả về đối tượng, và chèn kiểm tra phòng vệ trước khi Zod validate:
+   ```typescript
+   const analysis = JSON.parse(cleanText);
+   if (analysis && typeof analysis.content === 'object' && analysis.content !== null) {
+     analysis.content = convertObjectToMarkdown(analysis.content);
+   }
+   return AiAnalysisSchema.parse(analysis);
+   ```
+
+---
+
+## BUG #11 — Giao diện kẹt khung xương (skeletons) khi máy tính ngủ hoặc mất mạng tạm thời
+
+### Triệu chứng
+Nếu để mở trang web trong thời gian dài (máy tính ngủ hoặc mất mạng tạm thời rồi kết nối lại), giao diện sẽ bị treo vĩnh viễn ở trạng thái hiển thị 3 khối khung xương (skeleton loaders) mà không tự động khôi phục dữ liệu, bắt buộc phải tải lại trang (Refresh).
+
+### Nguyên nhân
+1. **Thiếu Axios Timeout:** Request GET gửi lên máy chủ bị ngắt nửa chừng (half-open) do chế độ ngủ của hệ điều hành. Do không cấu hình `timeout`, request bị treo vĩnh viễn ở trạng thái `pending`, khiến Promise của request không bao giờ resolve hay reject. Dẫn tới callback `.finally(() => setLoading(false))` không được gọi và màn hình bị kẹt ở trạng thái loading.
+2. **Không tự động refetch khi có kết nối lại:** Thiết bị mất mạng tạm thời hoặc tab bị ngủ không tự động tải lại dữ liệu nền khi tab được kích hoạt lại (window focus) hoặc mạng kết nối lại (online status).
+
+### Cách sửa
+1. **Cấu hình timeout cho Axios:**
+   Thêm `timeout: 10000` (10 giây) vào Axios config ở [api.ts](file:///home/baudui/Downloads/project/brain/frontend/src/utils/api.ts).
+2. **Tự động Refetch trên Window Focus/Online và bổ sung giao diện Báo lỗi:**
+   - Tại [HomeTemplate.tsx](file:///home/baudui/Downloads/project/brain/frontend/src/components/templates/HomeTemplate.tsx) và [CategoryTemplate.tsx](file:///home/baudui/Downloads/project/brain/frontend/src/components/templates/CategoryTemplate.tsx), thêm lắng nghe các sự kiện `focus` và `online` trên `window` để tự động làm mới dữ liệu dưới nền (silent background refresh) giúp ứng dụng tự hồi phục dữ liệu.
+   - Thêm state `error` và hiển thị một panel báo lỗi kết nối trực quan kèm nút **"Thử lại ngay"** khi request thất bại (thay vì kẹt vô hạn ở skeletons loader).
+
