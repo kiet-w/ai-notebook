@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #37352f;
+  --sidebar-background: #f7f6f3;
+  --border: rgba(55, 53, 47, 0.09);
+  --hover-background: rgba(55, 53, 47, 0.08);
+  --secondary-text: rgba(55, 53, 47, 0.65);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar: var(--sidebar-background);
+  --color-border: var(--border);
+  --color-hover: var(--hover-background);
+  --color-secondary-text: var(--secondary-text);
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  
+  --animate-spin-slow: spin 3s linear infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #191919;
+    --foreground: rgba(255, 255, 255, 0.9);
+    --sidebar-background: #202020;
+    --border: rgba(255, 255, 255, 0.09);
+    --hover-background: rgba(255, 255, 255, 0.05);
+    --secondary-text: rgba(255, 255, 255, 0.5);
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(35, 131, 226, 0.2);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+}

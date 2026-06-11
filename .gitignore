@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.venv/
+.venv-brain/
+venv/
+env/
+ENV/
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+tsconfig.tsbuildinfo
+
+# Local configuration / env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE / Editor folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project-specific paths
+brain/backend/uploads/
+uploads/
+.codegraph/
+.opencode/
+.superpowers/
+db.sqlite
+*.db
