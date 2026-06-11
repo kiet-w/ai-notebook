@@ -100,6 +100,7 @@ export class AiService {
 
       if (process.env.GEMINI_API_KEY?.startsWith('gsk_')) {
         const systemInstruction = 'You are a knowledge parsing assistant for a Second Brain application. You analyze documents and return structured JSON summaries.\n\n' +
+          'IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.\n\n' +
           'You MUST respond with a JSON object matching the following structure:\n' +
           '{\n' +
           '  "title": "A string representing a concise title",\n' +
@@ -116,6 +117,7 @@ export class AiService {
           contents: `Analyze the following document and extract its key information. Ensure you choose the most relevant category from: COOKING, TECH, LEARNING, WORK, FINANCE, OTHER.\n\nDocument Content:\n${content}`,
           config: {
             systemInstruction: 'You are a knowledge parsing assistant for a Second Brain application. You analyze documents and return structured JSON summaries.\n\n' +
+              'IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.\n\n' +
               'You MUST respond with a JSON object matching the following structure:\n' +
               '{\n' +
               '  "title": "A string representing a concise title",\n' +
@@ -141,6 +143,9 @@ export class AiService {
       }
 
       const analysis = JSON.parse(cleanText);
+      if (analysis && typeof analysis.content === 'object' && analysis.content !== null) {
+        analysis.content = convertObjectToMarkdown(analysis.content);
+      }
       try {
         return AiAnalysisSchema.parse(analysis);
       } catch (validationError) {
@@ -160,6 +165,7 @@ export class AiService {
 
       if (process.env.GEMINI_API_KEY?.startsWith('gsk_')) {
         const systemInstruction = 'You are a meticulous knowledge extraction assistant for a Second Brain application.\n\n' +
+          'IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.\n\n' +
           'Your job is to READ EVERY WORD visible in the image and extract ALL content in full detail.\n' +
           'Rules:\n' +
           '- Keep ALL technical terms, algorithm names, framework names, and proper nouns in ENGLISH (do not translate them).\n' +
@@ -190,6 +196,7 @@ export class AiService {
           ],
           config: {
             systemInstruction: 'You are a meticulous knowledge extraction assistant for a Second Brain application.\n\n' +
+              'IMPORTANT: The "content" field MUST be a single raw text string containing Markdown. It MUST NOT be a JSON object or JSON array.\n\n' +
               'Your job is to READ EVERY WORD visible in the image and extract ALL content in full detail.\n' +
               'Rules:\n' +
               '- Keep ALL technical terms, algorithm names, framework names, and proper nouns in ENGLISH (do not translate them).\n' +
@@ -212,6 +219,9 @@ export class AiService {
       }
 
       const analysis = JSON.parse(cleanText);
+      if (analysis && typeof analysis.content === 'object' && analysis.content !== null) {
+        analysis.content = convertObjectToMarkdown(analysis.content);
+      }
       try {
         return AiAnalysisSchema.parse(analysis);
       } catch (validationError) {
@@ -251,4 +261,21 @@ export class AiService {
       return `Sorry, I encountered an error while trying to answer your question: ${error.message}`;
     }
   }
+}
+
+function convertObjectToMarkdown(obj: any, depth = 0): string {
+  if (typeof obj === 'string') return obj;
+  if (typeof obj !== 'object' || obj === null) return String(obj);
+  if (Array.isArray(obj)) {
+    return obj.map(item => `${'  '.repeat(depth)}- ${convertObjectToMarkdown(item, depth + 1)}`).join('\n');
+  }
+  return Object.entries(obj)
+    .map(([key, val]) => {
+      const headingPrefix = depth === 0 ? '### ' : depth === 1 ? '#### ' : '';
+      if (typeof val === 'object' && val !== null) {
+        return `${headingPrefix}${key}\n${convertObjectToMarkdown(val, depth + 1)}`;
+      }
+      return `${headingPrefix}${key}: ${val}`;
+    })
+    .join('\n\n');
 }
