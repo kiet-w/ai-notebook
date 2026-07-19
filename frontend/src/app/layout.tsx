@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import QueryProvider from "@/components/providers/QueryProvider";
 
 export const metadata: Metadata = {
   title: "Secondary Brain",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="h-full bg-background text-foreground">
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

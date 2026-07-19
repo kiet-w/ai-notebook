@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, memo, useMemo } from 'react';
+import { useState, memo, useMemo, useRef } from 'react';
 import { Note } from '@/types/note';
 import { api } from '@/utils/api';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import Badge from '@/components/atoms/Badge';
-import Image from 'next/image';
+// import Image from 'next/image';
 import { getRelativeImageUrl } from '@/utils/image';
 
 interface NoteCardProps {
@@ -31,6 +31,8 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
   const [imageAspectRatio, setImageAspectRatio] = useState<'portrait' | 'landscape' | null>(null);
   const [localIsRead, setLocalIsRead] = useState(note.isRead);
   const [prevIsRead, setPrevIsRead] = useState(note.isRead);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [popupPos, setPopupPos] = useState<'left' | 'right'>('left');
 
   if (note.isRead !== prevIsRead) {
     setPrevIsRead(note.isRead);
@@ -63,12 +65,11 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
         <div className="flex flex-col gap-2 h-full w-full justify-between">
           {/* Top: Landscape Image Banner */}
           <div className="h-[65px] w-[65px] shrink-0 relative overflow-hidden rounded-xl border border-zinc-200/50 dark:border-zinc-800/45 bg-zinc-50 dark:bg-zinc-950">
-            <Image 
+            <img 
               src={getRelativeImageUrl(note.url)} 
               alt={note.title || "Note attachment preview"} 
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 20vw"
+              className="object-cover w-full h-full"
+              loading="lazy"
             />
             {note.status === 'PROCESSING' && (
               <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px] flex items-center justify-center gap-1.5">
@@ -188,12 +189,11 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
           </div>
 
           <div className="w-20 h-full shrink-0 relative overflow-hidden rounded-xl border border-zinc-200/50 dark:border-zinc-800/45 bg-zinc-50 dark:bg-zinc-950">
-            <Image 
+            <img 
               src={getRelativeImageUrl(note.url)} 
               alt={note.title || "Note attachment preview"} 
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 20vw"
+              className="object-cover w-full h-full"
+              loading="lazy"
             />
             {note.status === 'PROCESSING' && (
               <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px] flex flex-col items-center justify-center gap-1">
@@ -313,6 +313,16 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
     if (!localIsRead && note.status !== 'PROCESSING') {
       handleMarkAsRead();
     }
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      // If expanding to the right would overflow, anchor it to the right side
+      if (rect.right + rect.width > screenWidth - 20) {
+        setPopupPos('right');
+      } else {
+        setPopupPos('left');
+      }
+    }
   };
 
   const handleCardClick = () => {
@@ -324,6 +334,7 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
 
   return (
     <div 
+      ref={cardRef}
       className="relative w-full h-[180px]"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
@@ -340,9 +351,9 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
       {isHovered && (
         <div 
           onClick={handleCardClick}
-          className="absolute top-0 left-0 w-full z-50 p-6 rounded-2xl border border-zinc-300/60 dark:border-zinc-700/60 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.02)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.02)] flex flex-col gap-4 cursor-pointer"
+          className={`absolute top-0 ${popupPos === 'right' ? 'right-0' : 'left-0'} w-full h-[400px] sm:w-[calc(200%+1rem)] sm:h-[calc(200%+1rem)] z-50 p-6 rounded-2xl border border-zinc-300/60 dark:border-zinc-700/60 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-2xl flex flex-col gap-4 cursor-pointer transition-all`}
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4 shrink-0">
             <h3 className="font-semibold text-foreground leading-tight text-[17px] tracking-tight">
               {note.title || 'Untitled Note'}
             </h3>
@@ -354,76 +365,84 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
             )}
           </div>
 
-          <div className="max-h-[350px] overflow-y-auto pr-1 space-y-4">
-            {note.url && isImageUrl(note.url) && (
-              <div className="overflow-hidden rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center relative w-full h-[350px]">
-                <Image 
-                  src={getRelativeImageUrl(note.url)} 
-                  alt={note.title || "Note attachment"} 
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 20vw"
-                />
-              </div>
-            )}
-
-            {note.url && !isImageUrl(note.url) && (
-              <div className="p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200/50 dark:border-zinc-800/40 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-2xl shrink-0">📄</span>
-                  <div className="min-w-0">
-                    <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-0.5 select-none">Attachment</p>
-                    <p className="text-sm font-semibold text-foreground truncate">
-                      {note.url.split('/').pop() || 'Document'}
+          <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              
+              {/* Column 1 (Left): Summary and Bullets */}
+              <div className="space-y-6">
+                {note.summary && (
+                  <div>
+                    <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5 select-none">Summary</p>
+                    <p className="text-[14px] text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
+                      {note.summary}
                     </p>
                   </div>
-                </div>
-                <a 
-                  href={note.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs font-semibold text-white dark:text-zinc-900 shadow-sm shrink-0 cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Open File
-                </a>
+                )}
+                
+                {note.bullets && note.bullets.length > 0 && (
+                  <div>
+                    <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-2 select-none">Key Takeaways</p>
+                    <ul className="space-y-2">
+                      {note.bullets.map((bullet, i) => (
+                        <li key={i} className="text-sm text-zinc-655 dark:text-zinc-350 flex items-start gap-3">
+                          <span className="mt-1.5 w-1.5 h-1.5 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-650" />
+                          <span className="leading-snug font-medium">{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-            )}
 
-            {note.summary && (
-              <div>
-                <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5 select-none">Summary</p>
-                <p className="text-[14px] text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
-                  {note.summary}
-                </p>
-              </div>
-            )}
+              {/* Column 2 (Right): Image and Content */}
+              <div className="space-y-6">
+                {note.url && isImageUrl(note.url) && (
+                  <div className="overflow-hidden rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center relative w-full h-[180px]">
+                    <img 
+                      src={getRelativeImageUrl(note.url)} 
+                      alt={note.title || "Note attachment"} 
+                      className="object-cover w-full h-full"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
 
-            {note.content && (
-              <div>
-                <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5 select-none">Full Content / 5W1H Analysis</p>
-                <div className="p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200/50 dark:border-zinc-800/30 space-y-1.5">
-                  {renderMarkdown(note.content)}
-                </div>
-              </div>
-            )}
+                {note.url && !isImageUrl(note.url) && (
+                  <div className="p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200/50 dark:border-zinc-800/40 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-2xl shrink-0">📄</span>
+                      <div className="min-w-0">
+                        <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-0.5 select-none">Attachment</p>
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {note.url.split('/').pop() || 'Document'}
+                        </p>
+                      </div>
+                    </div>
+                    <a 
+                      href={note.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs font-semibold text-white dark:text-zinc-900 shadow-sm shrink-0 cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Open File
+                    </a>
+                  </div>
+                )}
 
-            {note.bullets && note.bullets.length > 0 && (
-              <div>
-                <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-2 select-none">Key Takeaways</p>
-                <ul className="space-y-2">
-                  {note.bullets.map((bullet, i) => (
-                    <li key={i} className="text-sm text-zinc-655 dark:text-zinc-350 flex items-start gap-3">
-                      <span className="mt-1.5 w-1.5 h-1.5 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-650" />
-                      <span className="leading-snug font-medium">{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
+                {note.content && (
+                  <div>
+                    <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-1.5 select-none">Full Content / 5W1H Analysis</p>
+                    <div className="p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200/50 dark:border-zinc-800/30 space-y-1.5">
+                      {renderMarkdown(note.content)}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
-          <div className="pt-3 border-t border-zinc-200/50 dark:border-zinc-800/40 flex items-center justify-between">
+          <div className="pt-3 border-t border-zinc-200/50 dark:border-zinc-800/40 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               {parsedDate && (
                 <>

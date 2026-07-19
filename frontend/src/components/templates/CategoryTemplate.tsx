@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -8,9 +8,9 @@ import NoteCard from '@/components/organisms/NoteCard';
 import Sidebar from '@/components/organisms/Sidebar';
 import { api, Note } from '@/utils/api';
 import { Category } from '@/types/note';
-import { useSSE } from '@/hooks/useSSE';
 import { Inbox, AlertCircle } from 'lucide-react';
 import { groupNotesByDate } from '@/utils/date';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 
 const NoteDetailModal = dynamic(() => import('@/components/organisms/NoteDetailModal'), { ssr: false });
 
@@ -20,118 +20,39 @@ interface CategoryTemplateProps {
 
 export default function CategoryTemplate({ category }: CategoryTemplateProps) {
   const router = useRouter();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeNoteForModal, setActiveNoteForModal] = useState<Note | null>(null);
-
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  const loadNotes = useCallback((showSkeleton = true) => {
-    if (showSkeleton) {
-      setLoading(true);
-    }
-    setError(null);
-    setHasMore(true);
+  const { data: unreadCounts = {} } = useQuery({
+    queryKey: ['unreadCounts'],
+    queryFn: () => api.fetchUnreadCounts()
+  });
 
-    Promise.all([
-      api.fetchNotes(category as Category, 25),
-      api.fetchUnreadCounts(),
-    ])
-      .then(([fetchedNotes, counts]) => {
-        setNotes(fetchedNotes);
-        setUnreadCounts(counts);
-        if (fetchedNotes.length < 25) {
-          setHasMore(false);
-        }
-      })
-      .catch((err) => {
-        console.error(`Failed to load category data:`, err);
-        if (showSkeleton) {
-          setError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối.');
-        }
-      })
-      .finally(() => {
-        if (showSkeleton) {
-          setLoading(false);
-        }
-      });
-  }, [category]);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch
+  } = useInfiniteQuery({
+    queryKey: ['notes', 'category', category],
+    queryFn: ({ pageParam }) => api.fetchNotes(category as Category, 25, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.length === 25 ? lastPage[lastPage.length - 1].id : undefined,
+  });
 
-  const loadMoreNotes = useCallback(() => {
-    if (loadingMore || !hasMore || loading || notes.length === 0) return;
+  const notes = useMemo(() => data?.pages.flat() || [], [data]);
 
-    setLoadingMore(true);
-    const lastNoteId = notes[notes.length - 1]?.id;
-
-    api.fetchNotes(category as Category, 25, lastNoteId)
-      .then((newNotes) => {
-        if (newNotes.length < 25) {
-          setHasMore(false);
-        }
-        setNotes((prev) => {
-          const prevIds = new Set(prev.map((n) => n.id));
-          const filteredNew = newNotes.filter((n) => !prevIds.has(n.id));
-          return [...prev, ...filteredNew];
-        });
-      })
-      .catch((err) => {
-        console.error('Failed to load more notes:', err);
-      })
-      .finally(() => {
-        setLoadingMore(false);
-      });
-  }, [category, notes, loadingMore, hasMore, loading]);
-
-  const handleNoteUpdated = useCallback((updatedNote: Note) => {
-    setNotes((prev) => {
-      const exists = prev.some((n) => n.id === updatedNote.id);
-      if (exists) {
-        if (updatedNote.category !== category) {
-          return prev.filter((n) => n.id !== updatedNote.id);
-        }
-        return prev.map((n) => (n.id === updatedNote.id ? updatedNote : n));
-      }
-      if (updatedNote.category === category) {
-        return [updatedNote, ...prev];
-      }
-      return prev;
-    });
-    api.fetchUnreadCounts().then(setUnreadCounts).catch(console.error);
-  }, [category]);
-
-  useSSE(handleNoteUpdated);
-
-  useEffect(() => {
-    setTimeout(() => {
-      loadNotes(true);
-    }, 0);
-
-    const handleFocus = () => {
-      loadNotes(false);
-    };
-
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('online', handleFocus);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('online', handleFocus);
-    };
-  }, [loadNotes]);
-
-  // Infinite Scroll Intersection Observer
   useEffect(() => {
     const currentTarget = observerRef.current;
     if (!currentTarget) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && hasMore && !loading) {
-          loadMoreNotes();
+        if (entries[0].isIntersecting && !isFetchingNextPage && hasNextPage && !isLoading) {
+          fetchNextPage();
         }
       },
       { threshold: 0.1 }
@@ -144,7 +65,7 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
         observer.unobserve(currentTarget);
       }
     };
-  }, [loadMoreNotes, loadingMore, hasMore, loading]);
+  }, [fetchNextPage, isFetchingNextPage, hasNextPage, isLoading]);
 
   const groupedNotes = useMemo(() => {
     return groupNotesByDate(notes);
@@ -194,23 +115,23 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
           </header>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {loading ? (
+            {isLoading ? (
               <>
                 {Array.from({ length: 15 }).map((_, i) => (
                   <div key={i} className="p-4 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-sm animate-pulse h-48" />
                 ))}
               </>
-            ) : error ? (
+            ) : isError ? (
               <div className="text-center py-20 border border-red-100 dark:border-red-900/20 bg-red-50/10 dark:bg-red-950/5 rounded-2xl p-8 max-w-md mx-auto col-span-full">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/25 text-red-500 mb-4">
-                  <AlertCircle className="w-6 h-6" />
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/25 text-red-50 mb-4">
+                  <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">Lỗi kết nối máy chủ</h3>
                 <p className="text-secondary-text text-sm mb-6">
-                  {error}
+                  Không thể tải danh sách ghi chú. Vui lòng thử lại.
                 </p>
                 <button
-                  onClick={() => loadNotes(true)}
+                  onClick={() => refetch()}
                   className="px-5 py-2.5 rounded-xl bg-foreground text-background font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
                 >
                   Thử lại ngay
@@ -244,9 +165,9 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
             )}
           </div>
 
-          {hasMore && !error && notes.length > 0 && (
+          {hasNextPage && !isError && notes.length > 0 && (
             <div ref={observerRef} className="w-full flex justify-center py-8">
-              {loadingMore && (
+              {isFetchingNextPage && (
                 <div className="w-6 h-6 rounded-full border-2 border-zinc-350 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100 animate-spin" />
               )}
             </div>

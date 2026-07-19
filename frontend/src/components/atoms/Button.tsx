@@ -3,11 +3,12 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'nav' | 'ghost';
+  variant?: 'primary' | 'nav' | 'ghost' | 'outline';
   isActive?: boolean;
+  fullWidth?: boolean;
 }
 
-export default function Button({ children, variant = 'primary', isActive, className = '', ...props }: ButtonProps) {
+export default function Button({ children, variant = 'primary', isActive, fullWidth, className = '', ...props }: ButtonProps) {
   let baseClass = '';
   
   if (variant === 'primary') {
@@ -21,6 +22,12 @@ export default function Button({ children, variant = 'primary', isActive, classN
     }`;
   } else if (variant === 'ghost') {
     baseClass = 'w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-zinc-500 dark:text-zinc-400 rounded-lg border border-transparent hover:bg-zinc-200/35 dark:hover:bg-zinc-800/20 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer';
+  } else if (variant === 'outline') {
+    baseClass = 'inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900 shadow-sm transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none';
+  }
+  
+  if (fullWidth) {
+    baseClass += ' w-full';
   }
 
   return (

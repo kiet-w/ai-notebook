@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import NoteInput from '@/components/molecules/NoteInput';
 import { api, Note } from '@/utils/api';
 import { Category } from '@/types/note';
-import { useSSE } from '@/hooks/useSSE';
 import { Download, Loader2, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { compressAndResizeImage } from '@/utils/image';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const Sidebar = dynamic(() => import('@/components/organisms/Sidebar'), { ssr: false });
 
@@ -22,117 +22,58 @@ interface RecentImport {
 
 export default function HomeTemplate() {
   const router = useRouter();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const pendingNoteIdRef = useRef<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [recentImports, setRecentImports] = useState<RecentImport[]>([]);
+  const queryClient = useQueryClient();
+  const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
 
-  // Load notes for sidebar counts & recent imports
-  const loadNotes = useCallback(() => {
-    Promise.all([
-      api.fetchNotes(undefined, 25),
-      api.fetchUnreadCounts(),
-    ])
-      .then(([fetchedNotes, counts]) => {
-        setNotes(fetchedNotes);
-        setUnreadCounts(counts);
-        // Show last 5 imports as recent
-        setRecentImports(
-          fetchedNotes.slice(0, 5).map(n => ({
-            id: n.id,
-            title: n.title || n.content?.slice(0, 60) || 'Untitled',
-            category: n.category,
-            status: n.status,
-            createdAt: n.createdAt,
-          }))
-        );
-      })
-      .catch(console.error);
-  }, []);
+  const { data: notes = [] } = useQuery({
+    queryKey: ['notes', 'recent'],
+    queryFn: () => api.fetchNotes(undefined, 25),
+  });
 
-  const handleNoteUpdated = useCallback((updatedNote: Note) => {
-    setNotes((prev) => {
-      const exists = prev.some((n) => n.id === updatedNote.id);
-      if (exists) {
-        return prev.map((n) => (n.id === updatedNote.id ? updatedNote : n));
-      }
-      return [updatedNote, ...prev];
-    });
+  const { data: unreadCounts = {} as Record<Category, number> } = useQuery({
+    queryKey: ['unreadCounts'],
+    queryFn: () => api.fetchUnreadCounts(),
+  });
 
-    // Update recent imports
-    setRecentImports((prev) => {
-      const existing = prev.findIndex(r => r.id === updatedNote.id);
-      const newEntry: RecentImport = {
-        id: updatedNote.id,
-        title: updatedNote.title || updatedNote.content?.slice(0, 60) || 'Untitled',
-        category: updatedNote.category,
-        status: updatedNote.status,
-        createdAt: updatedNote.createdAt,
-      };
-      if (existing >= 0) {
-        const next = [...prev];
-        next[existing] = newEntry;
-        return next;
-      }
-      return [newEntry, ...prev].slice(0, 5);
-    });
+  const recentImports = useMemo<RecentImport[]>(() => {
+    return notes.slice(0, 5).map(n => ({
+      id: n.id,
+      title: n.title || n.content?.slice(0, 60) || 'Untitled',
+      category: n.category,
+      status: n.status,
+      createdAt: n.createdAt,
+    }));
+  }, [notes]);
 
-    api.fetchUnreadCounts().then(setUnreadCounts).catch(console.error);
-
-    if (pendingNoteIdRef.current && updatedNote.id === pendingNoteIdRef.current) {
-      if (updatedNote.status === 'COMPLETED') {
-        setIsAnalyzing(false);
-        pendingNoteIdRef.current = null;
-        if (updatedNote.category) {
-          router.push('/' + updatedNote.category);
-        }
-      } else if (updatedNote.status === 'FAILED') {
-        setIsAnalyzing(false);
-        pendingNoteIdRef.current = null;
-      }
-    }
-  }, [router]);
-
-  useSSE(handleNoteUpdated);
+  const pendingNote = pendingNoteId ? notes.find(n => n.id === pendingNoteId) : null;
+  const isAnalyzing = pendingNoteId !== null && (!pendingNote || pendingNote.status === 'PROCESSING');
 
   useEffect(() => {
-    let active = true;
-    const timer = setTimeout(() => {
-      if (active) {
-        loadNotes();
+    if (pendingNote) {
+      if (pendingNote.status === 'COMPLETED') {
+        const cat = pendingNote.category;
+        setTimeout(() => setPendingNoteId(null), 0);
+        if (cat) {
+          router.push('/' + cat);
+        }
+      } else if (pendingNote.status === 'FAILED') {
+        setTimeout(() => setPendingNoteId(null), 0);
       }
-    }, 0);
-
-    const handleFocus = () => loadNotes();
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('online', handleFocus);
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('online', handleFocus);
-    };
-  }, [loadNotes]);
+    }
+  }, [pendingNote, router]);
 
   const handleCapture = useCallback(async (content: string, category?: Category) => {
     try {
       const realNote = await api.createNote(content, category);
-      pendingNoteIdRef.current = realNote.id;
-      setIsAnalyzing(true);
-
-      setRecentImports(prev => [{
-        id: realNote.id,
-        title: content.slice(0, 60),
-        category,
-        status: 'PROCESSING' as const,
-        createdAt: new Date().toISOString(),
-      }, ...prev].slice(0, 5));
+      setPendingNoteId(realNote.id);
+      
+      queryClient.setQueryData<Note[]>(['notes', 'recent'], (old = []) => {
+        return [realNote, ...old].slice(0, 25);
+      });
     } catch (error) {
       console.error('Failed to capture note:', error);
     }
-  }, []);
+  }, [queryClient]);
 
   const handleUpload = useCallback(async (file: File, category?: Category) => {
     let uploadFile = file;
@@ -147,20 +88,15 @@ export default function HomeTemplate() {
 
     try {
       const realNote = await api.uploadFile(uploadFile, category);
-      pendingNoteIdRef.current = realNote.id;
-      setIsAnalyzing(true);
+      setPendingNoteId(realNote.id);
 
-      setRecentImports(prev => [{
-        id: realNote.id,
-        title: file.name,
-        category,
-        status: 'PROCESSING' as const,
-        createdAt: new Date().toISOString(),
-      }, ...prev].slice(0, 5));
+      queryClient.setQueryData<Note[]>(['notes', 'recent'], (old = []) => {
+        return [realNote, ...old].slice(0, 25);
+      });
     } catch (error) {
       console.error('Failed to upload file:', error);
     }
-  }, []);
+  }, [queryClient]);
 
   const handleSelectCategory = useCallback((cat: string | null) => {
     if (cat) {
