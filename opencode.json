@@ -6,6 +6,11 @@
   "compaction": {
     "auto": true
   },
+  "plugin": [
+    "opencode-headroom",
+    "opencode-rtk",
+    "ponytail-opencode-plugin"
+  ],
   "mcp": {
     "playwright": {
       "type": "local",

@@ -1,0 +1,9 @@
+
+> backend@0.0.1 start:dev
+> nest start --watch
+
+[2J[3J[H[[90m8:25:47 PM[0m] Starting compilation in watch mode...
+
+[[90m8:25:51 PM[0m] Found 0 errors. Watching for file changes.
+
+◇ injected env (6) from .env // tip: ◈ secrets for agents [www.dotenvx.com]

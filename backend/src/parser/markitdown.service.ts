@@ -28,7 +28,8 @@ export class MarkitdownService {
       }
 
       return stdout;
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       this.logger.error(`Failed to convert file ${filePath}: ${error.message}`);
       throw new Error(`Failed to convert file to markdown: ${error.message}`);
     }

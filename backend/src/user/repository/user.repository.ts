@@ -23,8 +23,48 @@ export class UserRepository extends BaseRepository<
   findByUsername(user: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { user } });
   }
-  createRefreshToken(data: any) {
+  createRefreshToken(data: {
+    tokenHash: string;
+    family: string;
+    ip: string;
+    userAgent: string;
+    expiresAt: Date;
+    userId: string;
+  }) {
     return this.prisma.refreshToken.create({ data });
   }
-}
 
+  findRefreshTokenWithUser(tokenHash: string) {
+    return this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+  }
+
+  revokeTokenFamily(family: string) {
+    return this.prisma.refreshToken.updateMany({
+      where: { family },
+      data: { isRevoked: true },
+    });
+  }
+
+  revokeAndReplaceToken(id: string, replacedByTokenId: string) {
+    return this.prisma.refreshToken.update({
+      where: { id },
+      data: { isRevoked: true, replacedByTokenId },
+    });
+  }
+
+  revokeToken(id: string) {
+    return this.prisma.refreshToken.update({
+      where: { id },
+      data: { isRevoked: true },
+    });
+  }
+
+  findRefreshToken(tokenHash: string) {
+    return this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+  }
+}

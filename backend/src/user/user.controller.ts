@@ -13,28 +13,84 @@ import {
   Headers,
   Req,
   UnauthorizedException,
-  Head,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
-import { clearRefreshTokenCookie, setRefreshTokenCookie } from './helper/cookie.helper';
+import {
+  clearRefreshTokenCookie,
+  setRefreshTokenCookie,
+} from './helper/cookie.helper';
 import type { Request, Response } from 'express';
-import { Record } from '@prisma/client/runtime/client';
-import { AuthResponseDto } from './dto/response-token.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('create')
+  @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: CreateUserDto, @Ip() ip :string, @Headers('user-agent') userAgent: string): Promise<AuthResponseDto>{
-    const result = await this.userService.register(dto, ip, userAgent)
-    return result
+  async register(
+    @Body() dto: CreateUserDto,
+    @Ip() ip: string,
+    @Headers('user-agent') subAgent: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.userService.register(dto, ip, subAgent);
+    setRefreshTokenCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken };
   }
-  
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Body() dto: LoginDto,
+    @Ip() ip: string,
+    @Headers('user-agent') subAgent: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.userService.login(dto, ip, subAgent);
+    setRefreshTokenCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken };
+  }
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Req() req: Request,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies['refreshToken'] as string | undefined;
+    if (!refreshToken)
+      throw new UnauthorizedException('Không tìm thấy Refresh Token');
+    try {
+      const result = await this.userService.refresh(
+        refreshToken,
+        ip,
+        userAgent,
+      );
+      setRefreshTokenCookie(res, result.refreshToken);
+      return { accessToken: result.accessToken };
+    } catch (error) {
+      clearRefreshTokenCookie(res);
+      throw error;
+    }
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies['refreshToken'] as string | undefined;
+    if (refreshToken) {
+      await this.userService.logout(refreshToken);
+    }
+    clearRefreshTokenCookie(res);
+    return { message: 'Logged out successfully' };
+  }
   @Get()
   findAll(): Promise<ResponseUserDto[]> {
     return this.userService.findAll();

@@ -6,10 +6,11 @@ import * as cheerio from 'cheerio';
 export class ScraperService {
   async scrape(url: string): Promise<{ title: string; content: string }> {
     try {
-      const { data } = await axios.get(url, {
+      const response = await axios.get(url, {
         timeout: 10000, // 10 seconds timeout
         maxContentLength: 10 * 1024 * 1024, // max 10MB response size
       });
+      const data = response.data as string | Buffer;
       const $ = cheerio.load(data);
 
       const title = $('title').text().trim() || 'No Title';
@@ -24,7 +25,7 @@ export class ScraperService {
       content = content.replace(/\s+/g, ' ').trim();
 
       return { title, content };
-    } catch (error) {
+    } catch {
       throw new HttpException('Failed to scrape URL', HttpStatus.BAD_REQUEST);
     }
   }

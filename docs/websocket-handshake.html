@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebSocket Handshake — Tại sao cần bước hash?</title>
+  <meta name="description" content="Demo tương tác giải thích cơ chế Sec-WebSocket-Key hash trong WebSocket handshake và tại sao nó ngăn chặn được proxy cache attack." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #080c10;
+      --surface:   #0d1117;
+      --border:    #1e2a38;
+      --border-hi: #2e3f55;
+      --text:      #c9d1d9;
+      --muted:     #57687a;
+      --accent:    #58a6ff;
+      --accent-dim:#1f3a5f;
+      --green:     #3fb950;
+      --green-dim: #1a3d24;
+      --red:       #f85149;
+      --red-dim:   #3d1515;
+      --yellow:    #e3b341;
+      --purple:    #bc8cff;
+      --purple-dim:#2a1a4d;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --font-sans: 'Geist', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(255,255,255,.012) 2px, rgba(255,255,255,.012) 4px
+      );
+    }
+
+    header {
+      position: relative; z-index: 1;
+      padding: 4rem 2rem 2rem;
+      max-width: 900px; margin: 0 auto;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-family: var(--font-mono); font-size: .65rem;
+      text-transform: uppercase; letter-spacing: .15em;
+      color: var(--accent); background: var(--accent-dim);
+      border: 1px solid var(--accent); border-radius: 3px;
+      padding: .2rem .6rem; margin-bottom: 1.2rem;
+    }
+
+    h1 {
+      font-family: var(--font-sans);
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 600; line-height: 1.2;
+      color: #e6edf3; letter-spacing: -.02em;
+      margin-bottom: .8rem;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .subtitle {
+      font-size: .95rem; color: var(--muted);
+      line-height: 1.7; max-width: 62ch;
+    }
+
+    main {
+      position: relative; z-index: 1;
+      max-width: 900px; margin: 0 auto;
+      padding: 2.5rem 2rem 6rem;
+      display: flex; flex-direction: column; gap: 2.5rem;
+    }
+
+    .section-label {
+      font-family: var(--font-mono); font-size: .65rem;
+      text-transform: uppercase; letter-spacing: .18em;
+      color: var(--muted); margin-bottom: .75rem;
+    }
+
+    h2 {
+      font-size: 1.15rem; font-weight: 600;
+      color: #e6edf3; margin-bottom: 1.2rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+    }
+
+    .card-header {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-red { background: #ff5f57; }
+    .dot-yel { background: #ffbd2e; }
+    .dot-grn { background: #27c93f; }
+
+    .card-title {
+      font-family: var(--font-mono); font-size: .72rem;
+      color: var(--muted); margin-left: .3rem;
+    }
+
+    /* FLOW */
+    .flow-wrap {
+      padding: 1.5rem 1rem;
+      display: grid; gap: .75rem;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: .75rem; align-items: start;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity .4s, transform .4s;
+    }
+
+    .flow-step.visible { opacity: 1; transform: translateY(0); }
+
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-size: .7rem; font-weight: 700;
+      background: var(--accent-dim); border: 1.5px solid var(--accent);
+      color: var(--accent); flex-shrink: 0; margin-top: 2px;
+      transition: background .3s, border-color .3s, color .3s;
+    }
+
+    .step-num.ok   { background: var(--green-dim);  border-color: var(--green);  color: var(--green); }
+    .step-num.bad  { background: var(--red-dim);    border-color: var(--red);    color: var(--red); }
+    .step-num.warn { background: rgba(227,179,65,.15); border-color: var(--yellow); color: var(--yellow); }
+
+    .step-body { line-height: 1; }
+
+    .step-label {
+      font-size: .82rem; font-weight: 500;
+      color: #c9d1d9; margin-bottom: .35rem;
+    }
+
+    .step-code {
+      font-family: var(--font-mono); font-size: .72rem;
+      color: var(--muted); line-height: 1.6;
+      white-space: pre-wrap; word-break: break-all;
+    }
+
+    .step-code .hl-key   { color: var(--purple); }
+    .step-code .hl-val   { color: var(--yellow); }
+    .step-code .hl-ok    { color: var(--green); }
+    .step-code .hl-bad   { color: var(--red); }
+    .step-code .hl-dim   { color: var(--muted); }
+    .step-code .hl-blue  { color: var(--accent); }
+    .step-code .hl-magic { color: #ff9f43; }
+
+    .arrow {
+      display: flex; align-items: center;
+      margin: .2rem 0 .2rem 36px;
+      font-family: var(--font-mono); font-size: .68rem;
+      color: var(--muted);
+    }
+
+    .arrow::before {
+      content: ''; display: block;
+      width: 1px; height: 16px;
+      background: var(--border-hi);
+      margin-right: .5rem; margin-left: 13px;
+    }
+
+    /* SIMULATOR */
+    .sim-controls {
+      display: flex; gap: .75rem; flex-wrap: wrap;
+      padding: 1rem 1rem .5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .45rem 1rem; border-radius: 5px;
+      font-family: var(--font-mono); font-size: .72rem; font-weight: 500;
+      cursor: pointer; transition: all .2s;
+      border: 1.5px solid transparent; outline: none;
+      letter-spacing: .04em;
+    }
+
+    .btn:active { transform: scale(.97); }
+
+    .btn-primary {
+      background: var(--accent); border-color: var(--accent);
+      color: #0d1117;
+    }
+    .btn-primary:hover { background: #79c0ff; border-color: #79c0ff; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    .btn-danger {
+      background: transparent; border-color: var(--red);
+      color: var(--red);
+    }
+    .btn-danger:hover { background: var(--red-dim); }
+    .btn-danger:disabled { opacity: .4; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent; border-color: var(--border-hi);
+      color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+    /* LOG */
+    .log-wrap {
+      padding: 1rem; min-height: 320px;
+      font-family: var(--font-mono); font-size: .74rem;
+      line-height: 1.7; overflow-y: auto; max-height: 420px;
+    }
+
+    .log-line {
+      display: flex; gap: .5rem;
+      opacity: 0; transform: translateY(4px);
+      animation: fadeUp .3s forwards;
+      padding: .1rem 0;
+    }
+
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    .log-ts   { color: var(--muted); flex-shrink: 0; }
+    .log-src  { flex-shrink: 0; width: 58px; font-weight: 600; }
+    .log-src.client { color: var(--accent); }
+    .log-src.server { color: var(--green); }
+    .log-src.proxy  { color: var(--yellow); }
+    .log-src.system { color: var(--muted); }
+    .log-src.error  { color: var(--red); }
+    .log-msg  { color: var(--text); flex: 1; white-space: pre-wrap; word-break: break-all; }
+    .log-msg.ok   { color: var(--green); }
+    .log-msg.bad  { color: var(--red); }
+    .log-msg.warn { color: var(--yellow); }
+    .log-msg.dim  { color: var(--muted); }
+
+    /* STATUS */
+    .status-bar {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .6rem 1rem;
+      border-top: 1px solid var(--border);
+      background: rgba(255,255,255,.01);
+      font-family: var(--font-mono); font-size: .72rem;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted); transition: background .3s;
+    }
+    .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s infinite; }
+    .status-dot.error  { background: var(--red); box-shadow: 0 0 6px var(--red); }
+    .status-dot.warn   { background: var(--yellow); }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+
+    .status-text { color: var(--muted); }
+    .status-text.active { color: var(--green); }
+    .status-text.error  { color: var(--red); }
+    .status-text.warn   { color: var(--yellow); }
+
+    /* HASH VIS */
+    .hash-vis {
+      padding: 1.2rem 1rem;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+
+    .hash-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 28px 1fr;
+      gap: .5rem; align-items: center;
+      font-family: var(--font-mono); font-size: .72rem;
+    }
+
+    .hash-label { color: var(--muted); text-align: right; font-size: .65rem; }
+
+    .hash-val {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 4px; padding: .3rem .6rem;
+      color: var(--text); word-break: break-all;
+      min-height: 28px; transition: border-color .3s, background .3s;
+    }
+
+    .hash-val.highlight-key    { border-color: var(--purple); background: var(--purple-dim); color: var(--purple); }
+    .hash-val.highlight-magic  { border-color: #ff9f43; background: rgba(255,159,67,.1); color: #ff9f43; }
+    .hash-val.highlight-concat { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+    .hash-val.highlight-sha    { border-color: var(--yellow); background: rgba(227,179,65,.1); color: var(--yellow); }
+    .hash-val.highlight-b64    { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+
+    .hash-arrow { color: var(--muted); text-align: center; font-size: .9rem; }
+
+    /* COMPARE */
+    .compare-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      .hash-row { grid-template-columns: 70px 1fr 20px 1fr; font-size: .65rem; }
+    }
+
+    .compare-col {
+      background: rgba(255,255,255,.02);
+      border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden;
+    }
+
+    .compare-col-header {
+      padding: .5rem .75rem;
+      font-family: var(--font-mono); font-size: .65rem;
+      text-transform: uppercase; letter-spacing: .12em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-col.safe .compare-col-header   { color: var(--green); background: var(--green-dim); }
+    .compare-col.unsafe .compare-col-header { color: var(--red);   background: var(--red-dim); }
+
+    .compare-col-body {
+      padding: .75rem;
+      font-size: .8rem; line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .compare-col-body strong { color: var(--text); font-weight: 500; }
+    .compare-col-body code   { font-family: var(--font-mono); color: var(--yellow); font-size: .78rem; }
+
+    /* EXPLAIN BOX */
+    .explain-box {
+      background: rgba(88,166,255,.05);
+      border: 1px solid var(--accent-dim);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: .8rem 1rem;
+      font-size: .82rem; line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .explain-box strong { color: var(--accent); }
+
+    /* RESULT */
+    .result-overlay {
+      display: none;
+      padding: 1.5rem 1rem; text-align: center;
+    }
+
+    .result-overlay.show { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
+
+    .result-icon {
+      font-size: 2.5rem; line-height: 1;
+      animation: popIn .4s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+
+    @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+    .result-msg { font-size: 1rem; font-weight: 600; }
+    .result-sub { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); }
+
+    /* CONNECTOR */
+    .connector {
+      height: 2px; border-radius: 2px;
+      background: var(--border);
+      position: relative; overflow: hidden;
+    }
+
+    .connector::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      width: 40%;
+      animation: connectorScan 1.8s linear infinite;
+      opacity: 0;
+    }
+
+    .connector.active::after { opacity: 1; }
+
+    @keyframes connectorScan {
+      from { transform: translateX(-100%); }
+      to   { transform: translateX(300%); }
+    }
+
+    /* MAGIC BOX */
+    .magic-box {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(255,159,67,.08);
+      border: 1px solid rgba(255,159,67,.3);
+      border-radius: 4px;
+      padding: .15rem .5rem;
+      font-family: var(--font-mono); font-size: .7rem;
+      color: #ff9f43;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+    footer {
+      position: relative; z-index: 1;
+      text-align: center; padding: 2rem;
+      font-family: var(--font-mono); font-size: .65rem;
+      color: var(--muted); border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">
+    <span>RFC 6455</span>
+    <span style="color:var(--muted)">·</span>
+    <span>WebSocket Handshake</span>
+  </div>
+  <h1>Tại sao WebSocket cần bước <span>hash</span> trong handshake?</h1>
+  <p class="subtitle">
+    Demo tương tác: mô phỏng <code style="font-family:var(--font-mono);color:var(--yellow)">Sec-WebSocket-Key</code> → SHA-1 → Base64 → <code style="font-family:var(--font-mono);color:var(--green)">Sec-WebSocket-Accept</code>,
+    và chứng minh tại sao bước này ngăn được proxy cache trả lại response cũ.
+  </p>
+</header>
+
+<main>
+
+  <!-- ① COMPARISON -->
+  <section>
+    <p class="section-label">Vấn đề</p>
+    <h2>Không có hash — dễ bị proxy/cache lừa</h2>
+
+    <div class="compare-grid">
+      <div class="compare-col unsafe">
+        <div class="compare-col-header">Không có hash (unsafe)</div>
+        <div class="compare-col-body">
+          Client gửi <code>GET /chat  Upgrade: websocket</code><br><br>
+          <strong>Proxy cache</strong> nhầm trả <code>101 Switching Protocols</code>
+          từ request trước đó.<br><br>
+          Client <strong>không thể phân biệt</strong> — không có gì để so sánh.
+          Cứ nhận 101 là tin. Kết nối bị "bắt tay hụt".
+        </div>
+      </div>
+      <div class="compare-col safe">
+        <div class="compare-col-header">Có hash — RFC 6455</div>
+        <div class="compare-col-body">
+          Client gửi kèm <code>Sec-WebSocket-Key</code> ngẫu nhiên mỗi lần.<br><br>
+          Server phải tính hash từ đúng key đó và trả về <code>Sec-WebSocket-Accept</code>.<br><br>
+          Client tự tính lại và so sánh —
+          <strong>proxy không thể giả mạo</strong> vì key mỗi lần khác nhau → hash khác nhau.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② FLOW DIAGRAM -->
+  <section>
+    <p class="section-label">Cơ chế</p>
+    <h2>Luồng hash — từng bước</h2>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yel"></div>
+        <div class="dot dot-grn"></div>
+        <span class="card-title">websocket-handshake.flow</span>
+      </div>
+      <div class="flow-wrap" id="flowWrap">
+
+        <div class="flow-step" id="fs0">
+          <div class="step-num" id="fsn0">1</div>
+          <div class="step-body">
+            <div class="step-label">Client tạo key ngẫu nhiên</div>
+            <div class="step-code">GET /chat HTTP/1.1
+Upgrade: <span class="hl-blue">websocket</span>
+Sec-WebSocket-Key: <span class="hl-key" id="disp-key">dGhlIHNhbXBsZSBub25jZQ==</span>   <span class="hl-dim">← random, base64(16 bytes)</span>
+Sec-WebSocket-Version: <span class="hl-dim">13</span></div>
+          </div>
+        </div>
+
+        <div class="arrow">bước tiếp</div>
+
+        <div class="flow-step" id="fs1">
+          <div class="step-num" id="fsn1">2</div>
+          <div class="step-body">
+            <div class="step-label">Server ghép key + Magic String (RFC 6455 §1.3)</div>
+            <div class="step-code">concat = <span class="hl-key" id="disp-concat-key">dGhlIHNhbXBsZSBub25jZQ==</span><span class="hl-magic">258EAFA5-E914-47DA-95CA-C5AB0DC85B11</span>
+sha1   = SHA1( concat )
+accept = base64( sha1 )</div>
+          </div>
+        </div>
+
+        <div class="arrow">bước tiếp</div>
+
+        <div class="flow-step" id="fs2">
+          <div class="step-num" id="fsn2">3</div>
+          <div class="step-body">
+            <div class="step-label">Server gửi response với giá trị đã tính</div>
+            <div class="step-code">HTTP/1.1 101 Switching Protocols
+Upgrade: <span class="hl-blue">websocket</span>
+Sec-WebSocket-Accept: <span class="hl-ok" id="disp-accept">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span></div>
+          </div>
+        </div>
+
+        <div class="arrow">bước tiếp</div>
+
+        <div class="flow-step" id="fs3">
+          <div class="step-num" id="fsn3">4</div>
+          <div class="step-body">
+            <div class="step-label">Client tự tính lại và so sánh</div>
+            <div class="step-code">expected = base64(SHA1(<span class="hl-key">key</span> + <span class="hl-magic">MAGIC</span>)) = <span class="hl-ok" id="disp-expected">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span>
+received =                                 <span class="hl-ok" id="disp-received">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</span>
+match?   → <span id="disp-match" class="hl-ok">✓ YES — Handshake hợp lệ!</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ HASH VISUALIZER -->
+  <section>
+    <p class="section-label">Chi tiết tính toán</p>
+    <h2>Quá trình tính <code style="font-family:var(--font-mono);font-size:.9em">Sec-WebSocket-Accept</code></h2>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yel"></div>
+        <div class="dot dot-grn"></div>
+        <span class="card-title">hash-calculator — dùng SubtleCrypto API thật</span>
+      </div>
+      <div class="hash-vis">
+        <div class="hash-row">
+          <div class="hash-label">KEY</div>
+          <div class="hash-val highlight-key" id="hv-key">dGhlIHNhbXBsZSBub25jZQ==</div>
+          <div class="hash-arrow">+</div>
+          <div class="hash-val highlight-magic" id="hv-magic">258EAFA5-E914-47DA-95CA-C5AB0DC85B11</div>
+        </div>
+        <div class="hash-row">
+          <div class="hash-label">CONCAT</div>
+          <div class="hash-val highlight-concat" id="hv-concat" style="grid-column:2/5">dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11</div>
+        </div>
+        <div class="hash-row">
+          <div class="hash-label">SHA-1</div>
+          <div class="hash-val highlight-sha" id="hv-sha" style="grid-column:2/5">b3 7a 4f 2c c0 62 4f 16 90 f6 46 06 cf 38 59 45 b2 be c4 ea</div>
+        </div>
+        <div class="hash-row">
+          <div class="hash-label">BASE64</div>
+          <div class="hash-val highlight-b64" id="hv-b64" style="grid-column:2/5">s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</div>
+        </div>
+
+        <div class="explain-box">
+          <strong>Magic String</strong>&nbsp;
+          <span class="magic-box">258EAFA5-E914-47DA-95CA-C5AB0DC85B11</span>
+          &nbsp;là UUID cố định được ghi trong RFC 6455 §1.3 — không có ý nghĩa đặc biệt ngoài
+          việc làm định danh protocol duy nhất. Cả client và server đều hardcode giá trị này.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ LIVE SIMULATOR -->
+  <section>
+    <p class="section-label">Mô phỏng</p>
+    <h2>Live Simulator — kết nối bình thường vs proxy attack</h2>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yel"></div>
+        <div class="dot dot-grn"></div>
+        <span class="card-title">ws-simulator — hash được tính bằng SubtleCrypto thật</span>
+      </div>
+
+      <div class="sim-controls">
+        <button class="btn btn-primary" id="btnConnect" onclick="runNormal()">
+          ▶ Connect (Normal)
+        </button>
+        <button class="btn btn-danger" id="btnProxy" onclick="runProxy()">
+          ⚡ Simulate Proxy Attack
+        </button>
+        <button class="btn btn-ghost" onclick="clearLog()">✕ Clear</button>
+      </div>
+
+      <div class="connector" id="connectorBar"></div>
+
+      <div class="log-wrap" id="logWrap">
+        <div class="log-line" style="opacity:1;transform:none">
+          <span class="log-ts">00:000</span>
+          <span class="log-src system">SYSTEM</span>
+          <span class="log-msg dim">Simulator ready. Nhấn "Connect" để bắt đầu.</span>
+        </div>
+      </div>
+
+      <div class="result-overlay" id="resultOverlay"></div>
+
+      <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-text" id="statusText">Idle — chưa có kết nối</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ SUMMARY -->
+  <section>
+    <p class="section-label">Tóm tắt</p>
+    <h2>Mục đích của bước hash — một câu</h2>
+    <div class="explain-box" style="font-size:.88rem;line-height:1.8;">
+      Bước hash đảm bảo response <strong>101 Switching Protocols</strong> mà client nhận được
+      là <strong>do chính server này vừa xử lý đúng request này</strong> — không phải
+      response cũ/nhầm từ proxy cache — vì mỗi lần connect client tạo key random mới,
+      server phải hash đúng key đó mới match được; proxy không thể tái sử dụng response cũ.
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  RFC 6455 — The WebSocket Protocol · §1.3 Opening Handshake · SHA-1 + Base64 mechanism
+</footer>
+
+<script>
+  const MAGIC = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+
+  function genKey() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return btoa(String.fromCharCode(...bytes));
+  }
+
+  async function sha1(str) {
+    const buf = new TextEncoder().encode(str);
+    const hash = await crypto.subtle.digest('SHA-1', buf);
+    return new Uint8Array(hash);
+  }
+
+  function toHex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join(' ');
+  }
+
+  function toB64(bytes) {
+    return btoa(String.fromCharCode(...bytes));
+  }
+
+  async function computeAccept(key) {
+    const concat = key + MAGIC;
+    const hashBytes = await sha1(concat);
+    return { concat, sha1Hex: toHex(hashBytes), accept: toB64(hashBytes) };
+  }
+
+  let startTime = null;
+  function ts() {
+    const now = Date.now();
+    if (!startTime) startTime = now;
+    const d = now - startTime;
+    const s = Math.floor(d / 1000).toString().padStart(2,'0');
+    const ms = (d % 1000).toString().padStart(3,'0');
+    return `${s}:${ms}`;
+  }
+
+  const logWrap = document.getElementById('logWrap');
+
+  function log(src, msg, cls = '', delay = 0) {
+    return new Promise(res => setTimeout(() => {
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.innerHTML = `
+        <span class="log-ts">${ts()}</span>
+        <span class="log-src ${src.toLowerCase()}">${src.padEnd(6)}</span>
+        <span class="log-msg ${cls}">${escHtml(msg)}</span>
+      `;
+      logWrap.appendChild(line);
+      logWrap.scrollTop = logWrap.scrollHeight;
+      res();
+    }, delay));
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function clearLog() {
+    logWrap.innerHTML = '';
+    startTime = null;
+    setStatus('idle', 'Idle — chưa có kết nối');
+    showResult(false);
+    stopConnector();
+    resetFlowSteps();
+  }
+
+  function setStatus(state, msg) {
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    const map = { active:'active', error:'error', warn:'warn' };
+    dot.className = 'status-dot ' + (map[state] || '');
+    txt.className = 'status-text ' + (map[state] || '');
+    txt.textContent = msg || 'Idle';
+  }
+
+  function startConnector() { document.getElementById('connectorBar').classList.add('active'); }
+  function stopConnector()  { document.getElementById('connectorBar').classList.remove('active'); }
+
+  function showResult(show, success, msg, sub) {
+    const el = document.getElementById('resultOverlay');
+    if (!show) { el.className = 'result-overlay'; return; }
+    el.className = 'result-overlay show';
+    el.innerHTML = `
+      <div class="result-icon">${success ? '✅' : '❌'}</div>
+      <div class="result-msg" style="color:${success ? 'var(--green)' : 'var(--red)'}">${escHtml(msg)}</div>
+      <div class="result-sub">${escHtml(sub)}</div>
+    `;
+  }
+
+  function animFlowStep(idx, state) {
+    const step = document.getElementById('fs' + idx);
+    const num  = document.getElementById('fsn' + idx);
+    if (step) step.classList.add('visible');
+    if (num && state) num.className = 'step-num ' + state;
+  }
+
+  function resetFlowSteps() {
+    for (let i = 0; i < 4; i++) {
+      const s = document.getElementById('fs' + i);
+      const n = document.getElementById('fsn' + i);
+      if (s) s.classList.remove('visible');
+      if (n) { n.className = 'step-num'; n.textContent = String(i+1); }
+    }
+    document.getElementById('disp-key').textContent = 'dGhlIHNhbXBsZSBub25jZQ==';
+    document.getElementById('disp-concat-key').textContent = 'dGhlIHNhbXBsZSBub25jZQ==';
+    document.getElementById('disp-accept').textContent = 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=';
+    document.getElementById('disp-expected').textContent = 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=';
+    document.getElementById('disp-received').textContent = 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=';
+    document.getElementById('disp-match').textContent = '✓ YES — Handshake hợp lệ!';
+    document.getElementById('disp-match').className = 'hl-ok';
+  }
+
+  async function updateHashVis(key) {
+    const { concat, sha1Hex, accept } = await computeAccept(key);
+    document.getElementById('hv-key').textContent = key;
+    document.getElementById('hv-magic').textContent = MAGIC;
+    document.getElementById('hv-concat').textContent = concat;
+    document.getElementById('hv-sha').textContent = sha1Hex;
+    document.getElementById('hv-b64').textContent = accept;
+  }
+
+  let simRunning = false;
+  function lockButtons(v) {
+    simRunning = v;
+    document.getElementById('btnConnect').disabled = v;
+    document.getElementById('btnProxy').disabled = v;
+  }
+
+  async function runNormal() {
+    if (simRunning) return;
+    lockButtons(true);
+    clearLog();
+    resetFlowSteps();
+    startConnector();
+    startTime = null;
+
+    const myKey = genKey();
+    const { accept } = await computeAccept(myKey);
+
+    await log('CLIENT', 'Generating random 16-byte nonce...', '', 100);
+    await log('CLIENT', 'Sec-WebSocket-Key = ' + myKey, 'warn', 400);
+    animFlowStep(0, 'ok');
+
+    await log('CLIENT', 'Sending HTTP Upgrade request to server...', '', 800);
+
+    await log('SERVER', 'Received upgrade request', '', 1300);
+    await log('SERVER', 'Concatenating: key + MAGIC_STRING', 'dim', 1500);
+    await log('SERVER', 'Running SHA-1...', 'dim', 1700);
+    await log('SERVER', 'accept = base64(sha1) = ' + accept, 'ok', 2000);
+    animFlowStep(1, 'ok');
+    await updateHashVis(myKey);
+
+    document.getElementById('disp-key').textContent = myKey;
+    document.getElementById('disp-concat-key').textContent = myKey;
+    document.getElementById('disp-accept').textContent = accept;
+
+    await log('SERVER', 'Sending HTTP/1.1 101 Switching Protocols...', '', 2500);
+    await log('SERVER', 'Sec-WebSocket-Accept = ' + accept, 'warn', 2700);
+    animFlowStep(2, 'ok');
+
+    await log('CLIENT', 'Received 101 response', '', 3100);
+    await log('CLIENT', 'Computing expected accept from MY key...', 'dim', 3300);
+    await log('CLIENT', 'expected = ' + accept, 'ok', 3600);
+    await log('CLIENT', 'received = ' + accept, 'ok', 3800);
+    await log('CLIENT', 'MATCH ✓ — Handshake valid!', 'ok', 4100);
+    animFlowStep(3, 'ok');
+
+    document.getElementById('disp-expected').textContent = accept;
+    document.getElementById('disp-received').textContent = accept;
+
+    await log('SYSTEM', 'WebSocket connection established ✓', 'ok', 4500);
+
+    setTimeout(() => {
+      stopConnector();
+      setStatus('active', 'Connected — WebSocket handshake OK');
+      showResult(true, true, 'Kết nối thành công!', 'Key: ' + myKey.slice(0,22) + '...  Accept: ' + accept.slice(0,16) + '...');
+      lockButtons(false);
+    }, 4700);
+  }
+
+  async function runProxy() {
+    if (simRunning) return;
+    lockButtons(true);
+    clearLog();
+    resetFlowSteps();
+    startConnector();
+    startTime = null;
+
+    const staleKey = genKey();
+    const { accept: staleAccept } = await computeAccept(staleKey);
+    const currentKey = genKey();
+    const { accept: currentAccept } = await computeAccept(currentKey);
+
+    await log('SYSTEM', '[PROXY ATTACK] Proxy đang cache response từ lần connect trước...', 'warn', 100);
+    await log('PROXY',  'Stale cached key    = ' + staleKey.slice(0,22) + '...', 'warn', 350);
+    await log('PROXY',  'Stale cached accept = ' + staleAccept.slice(0,22) + '...', 'warn', 600);
+
+    await log('CLIENT', 'Generating NEW random key for THIS connection...', '', 1000);
+    await log('CLIENT', 'Sec-WebSocket-Key = ' + currentKey, 'warn', 1250);
+    animFlowStep(0, 'warn');
+
+    await log('CLIENT', 'Sending HTTP Upgrade request...', '', 1650);
+    await log('PROXY',  'Intercepting request! Found cached 101 response!', 'bad', 1950);
+    await log('PROXY',  'Returning stale Sec-WebSocket-Accept = ' + staleAccept.slice(0,22) + '...', 'bad', 2250);
+    animFlowStep(1, 'warn');
+    animFlowStep(2, 'warn');
+    await updateHashVis(currentKey);
+
+    document.getElementById('disp-key').textContent = currentKey;
+    document.getElementById('disp-concat-key').textContent = currentKey;
+    document.getElementById('disp-accept').textContent = staleAccept + '  ← STALE từ proxy!';
+
+    await log('CLIENT', 'Received 101 (from PROXY, not real server!)', 'warn', 2800);
+    await log('CLIENT', 'Computing expected accept from MY key...', 'dim', 3100);
+    await log('CLIENT', 'expected = ' + currentAccept + '  ← từ key hiện tại', 'ok', 3450);
+    await log('CLIENT', 'received = ' + staleAccept  + '  ← từ proxy cache', 'bad', 3750);
+    await log('CLIENT', 'MISMATCH ✗ — hai giá trị KHÁC NHAU!', 'bad', 4100);
+    animFlowStep(3, 'bad');
+
+    document.getElementById('disp-expected').textContent = currentAccept + '  (từ key của tôi)';
+    document.getElementById('disp-received').textContent = staleAccept  + '  (từ proxy cache)';
+    document.getElementById('disp-match').textContent = '✗ MISMATCH — Từ chối handshake!';
+    document.getElementById('disp-match').className = 'hl-bad';
+    document.getElementById('fsn3').className = 'step-num bad';
+
+    await log('CLIENT', 'Refusing connection — handshake invalid!', 'bad', 4600);
+    await log('SYSTEM', 'Proxy attack detected and blocked. Hash mechanism worked!', 'ok', 5050);
+
+    setTimeout(() => {
+      stopConnector();
+      setStatus('error', 'Proxy attack detected — connection rejected');
+      showResult(true, false,
+        'Proxy Attack bị chặn thành công!',
+        'expected: ' + currentAccept.slice(0,18) + '... ≠ received: ' + staleAccept.slice(0,18) + '...'
+      );
+      lockButtons(false);
+    }, 5300);
+  }
+
+  // Init: reveal flow steps on load
+  window.addEventListener('load', () => {
+    setTimeout(() => animFlowStep(0), 300);
+    setTimeout(() => animFlowStep(1), 600);
+    setTimeout(() => animFlowStep(2), 900);
+    setTimeout(() => animFlowStep(3), 1200);
+  });
+</script>
+</body>
+</html>

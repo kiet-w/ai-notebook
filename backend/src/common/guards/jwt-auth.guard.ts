@@ -17,7 +17,7 @@ export class JwtAuthGuard implements CanActivate {
     // Lấy accessToken từ header Authorization hoặc Query Parameter (dành cho SSE)
     const authHeader = req.headers['authorization'];
     let token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    
+
     // Fallback cho SSE (EventSource không hỗ trợ Header)
     if (!token && req.query.token && typeof req.query.token === 'string') {
       token = req.query.token;

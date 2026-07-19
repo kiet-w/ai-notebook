@@ -34,7 +34,10 @@ describe('MarkitdownService', () => {
 
       (execFile as unknown as jest.Mock).mockImplementation((cmd, args, cb) => {
         // cb is the third argument in execFile signature
-        const callback = typeof args === 'function' ? args : cb;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const callback: (...args: unknown[]) => void =
+          typeof args === 'function' ? args : cb;
+
         callback(null, { stdout: mockStdout, stderr: mockStderr });
       });
 
@@ -48,7 +51,10 @@ describe('MarkitdownService', () => {
       const mockError = new Error('Execution failed');
 
       (execFile as unknown as jest.Mock).mockImplementation((cmd, args, cb) => {
-        const callback = typeof args === 'function' ? args : cb;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const callback: (...args: unknown[]) => void =
+          typeof args === 'function' ? args : cb;
+
         callback(mockError, null);
       });
 

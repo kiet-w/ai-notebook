@@ -13,7 +13,6 @@ describe('NotesService', () => {
   let repository: NotesRepository;
   let scraperService: ScraperService;
   let aiService: AiService;
-  let markitdownService: MarkitdownService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -55,7 +54,6 @@ describe('NotesService', () => {
     repository = module.get<NotesRepository>(NotesRepository);
     scraperService = module.get<ScraperService>(ScraperService);
     aiService = module.get<AiService>(AiService);
-    markitdownService = module.get<MarkitdownService>(MarkitdownService);
   });
 
   it('should be defined', () => {
@@ -103,6 +101,7 @@ describe('NotesService', () => {
             aiSummary: 'Summary',
             aiBullets: ['One', 'Two'],
             content: 'Content',
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             createdAt: expect.any(Date),
           });
           done();
@@ -115,7 +114,7 @@ describe('NotesService', () => {
         userInput: null,
         status: Status.PROCESSING,
       });
-      service.create({ url });
+      void service.create({ url }, 'test-user-id');
     });
 
     it('should emit note-updated when processing fails', (done) => {
@@ -151,6 +150,7 @@ describe('NotesService', () => {
             aiSummary: null,
             aiBullets: null,
             content: null,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             createdAt: expect.any(Date),
           });
           done();
@@ -163,7 +163,7 @@ describe('NotesService', () => {
         userInput: null,
         status: Status.PROCESSING,
       });
-      service.create({ url });
+      void service.create({ url }, 'test-user-id');
     });
   });
 });

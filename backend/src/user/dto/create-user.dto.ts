@@ -29,8 +29,17 @@ export class CreateUserDto {
   @IsNotEmpty()
   @MinLength(6, { message: 'Password must be at least 6 characters long' })
   @IsStrongPassword(
-    { minLength: 6, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 0 },
-    { message: 'Password must contain at least 1 uppercase, 1 lowercase, and 1 number' }
+    {
+      minLength: 6,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 0,
+    },
+    {
+      message:
+        'Password must contain at least 1 uppercase, 1 lowercase, and 1 number',
+    },
   )
   password!: string;
 }

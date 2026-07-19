@@ -7,6 +7,7 @@ import { Logger } from 'nestjs-pino';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as fs from 'fs';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const uploadsDir = join(process.cwd(), 'uploads');
@@ -24,16 +25,38 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
 
+  app.use(cookieParser());
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow any localhost/127.0.0.1 or the explicit FRONTEND_ORIGIN
+      if (
+        !origin ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1') ||
+        origin === process.env.FRONTEND_ORIGIN
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
   });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3001).catch((err) => {
+    console.error(err);
+  });
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error(err);
+});

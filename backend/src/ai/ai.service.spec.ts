@@ -27,6 +27,7 @@ describe('AiService', () => {
       }),
     };
     jest
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .spyOn((service as any).ai.models, 'generateContent')
       .mockResolvedValue(mockResponse);
 

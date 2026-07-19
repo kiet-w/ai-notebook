@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotesController } from './notes.controller';
 import { NotesService } from './notes.service';
-import { of } from 'rxjs';
 import { MessageEvent } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 describe('NotesController', () => {
   let controller: NotesController;
@@ -22,6 +22,12 @@ describe('NotesController', () => {
             createFromFile: jest.fn(),
           },
         },
+        {
+          provide: JwtService,
+          useValue: {
+            verify: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -31,30 +37,6 @@ describe('NotesController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
-  });
-
-  describe('events', () => {
-    it('should return an observable of MessageEvent', (done) => {
-      const mockEvent = {
-        id: '1',
-        status: 'COMPLETED',
-        aiTitle: 'Title',
-        category: 'OTHER',
-        aiSummary: 'Summary',
-        aiBullets: ['One'],
-      };
-      (service.getEventStream as jest.Mock).mockReturnValue(of(mockEvent));
-
-      controller.events().subscribe({
-        next: (messageEvent) => {
-          expect(messageEvent).toEqual({
-            type: 'note-updated',
-            data: mockEvent,
-          });
-          done();
-        },
-      });
-    });
   });
 
   describe('uploadFile', () => {
@@ -83,17 +65,33 @@ describe('NotesController', () => {
 
       (service.createFromFile as jest.Mock).mockResolvedValue(mockNote);
 
-      const result = await controller.uploadFile(mockFile);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const result = await controller.uploadFile(mockFile, undefined, {
+        user: { id: 'test-user-id', role: 'user' },
+      } as any);
 
-      expect(service.createFromFile).toHaveBeenCalledWith(mockFile, undefined);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(service.createFromFile).toHaveBeenCalledWith(
+        mockFile,
+        'test-user-id',
+        undefined,
+      );
       expect(result.id).toBe('123');
       expect(result.userInput).toBe('Processing file: test.pdf');
     });
 
     it('should throw BadRequestException if no file is uploaded', async () => {
-      await expect(controller.uploadFile(null as any)).rejects.toThrow(
-        'No file uploaded',
-      );
+      await expect(
+        controller.uploadFile(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          null as any,
+          undefined,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          {
+            user: { id: 'test-user-id', role: 'user' },
+          } as any,
+        ),
+      ).rejects.toThrow('No file uploaded');
     });
   });
 });

@@ -17,27 +17,26 @@ export class NotesRepository extends BaseRepository<
     url?: string;
     userInput?: string;
     category?: Category;
+    userId: string;
   }): Promise<Note> {
     return super.create({
       url: data.url,
       userInput: data.userInput,
       category: data.category,
       status: Status.PROCESSING,
+      user: { connect: { id: data.userId } },
     });
   }
 
-  async findAll(
-    params: {
-      category?: Category;
-      limit?: number;
-      cursor?: string;
-      selectFullFields?: boolean;
-    } = {},
-  ): Promise<Note[]> {
-    const where: Prisma.NoteWhereInput = {};
-    if (params.category) {
-      where.category = params.category;
-    }
+  async findAll(params: {
+    userId: string;
+    category?: Category;
+    limit?: number;
+    cursor?: string;
+    selectFullFields?: boolean;
+  }): Promise<Note[]> {
+    const where: Prisma.NoteWhereInput = { userId: params.userId };
+    if (params.category) where.category = params.category;
     const limit = params.limit ?? 25;
     const queryParams: Prisma.NoteFindManyArgs = {
       where,
@@ -66,15 +65,15 @@ export class NotesRepository extends BaseRepository<
     return super.findAll(queryParams);
   }
 
-  async getUnreadCounts(): Promise<Record<Category, number>> {
+  async getUnreadCounts(userId: string): Promise<Record<Category, number>> {
     const counts = await this.prisma.note.groupBy({
       by: ['category'],
-      where: { isRead: false },
-      _count: { id: true },
+      where: { isRead: false, userId },
+      _count: { _all: true },
     });
     const result = {} as Record<Category, number>;
     counts.forEach((c) => {
-      result[c.category] = c._count.id;
+      result[c.category] = c._count._all;
     });
     return result;
   }
