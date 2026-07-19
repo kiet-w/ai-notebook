@@ -29,10 +29,12 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       // Allow any localhost/127.0.0.1 or the explicit FRONTEND_ORIGIN
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
+        origin || '',
+      );
       if (
         !origin ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1') ||
+        isLocalhost ||
         origin === process.env.FRONTEND_ORIGIN
       ) {
         callback(null, true);

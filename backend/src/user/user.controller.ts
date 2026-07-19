@@ -13,6 +13,8 @@ import {
   Headers,
   Req,
   UnauthorizedException,
+  UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,6 +26,11 @@ import {
 } from './helper/cookie.helper';
 import type { Request, Response } from 'express';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+
+interface AuthRequest extends Request {
+  user: { id: string; role: string };
+}
 
 @Controller('users')
 export class UserController {
@@ -92,26 +99,41 @@ export class UserController {
     return { message: 'Logged out successfully' };
   }
   @Get()
-  findAll(): Promise<ResponseUserDto[]> {
+  @UseGuards(JwtAuthGuard)
+  findAll(@Req() req: AuthRequest): Promise<ResponseUserDto[]> {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin only');
     return this.userService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<ResponseUserDto> {
+  @UseGuards(JwtAuthGuard)
+  findOne(
+    @Param('id') id: string,
+    @Req() req: AuthRequest,
+  ): Promise<ResponseUserDto> {
+    if (req.user.id !== id && req.user.role !== 'ADMIN')
+      throw new ForbiddenException('Access denied');
     return this.userService.findOne(id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
+    @Req() req: AuthRequest,
   ): Promise<ResponseUserDto> {
+    if (req.user.id !== id && req.user.role !== 'ADMIN')
+      throw new ForbiddenException('Access denied');
     return this.userService.update(id, dto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): Promise<void> {
+  remove(@Param('id') id: string, @Req() req: AuthRequest): Promise<void> {
+    if (req.user.id !== id && req.user.role !== 'ADMIN')
+      throw new ForbiddenException('Access denied');
     return this.userService.remove(id);
   }
 }

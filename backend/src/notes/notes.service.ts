@@ -14,7 +14,7 @@ import { NoteUpdatedEvent } from './types/sse-event.type';
 import { MarkitdownService } from '../parser/markitdown.service';
 import { extractBullets } from './utils/note.utils';
 import { promises as fs } from 'fs';
-import { join } from 'path';
+import { join, basename } from 'path';
 import { tmpdir } from 'os';
 
 @Injectable()
@@ -156,7 +156,7 @@ export class NotesService {
     category?: Category,
     detailLevel: 'short' | 'medium' | 'long' = 'medium',
   ): Promise<Note> {
-    const filename = file.originalname;
+    const filename = basename(file.originalname);
 
     const note = await this.repository.create({
       userInput: `Processing file: ${filename}`,
@@ -205,8 +205,9 @@ export class NotesService {
         );
         markdownContent = aiResult.content || `[Image: ${file.originalname}]`;
       } else {
+        const safeFilename = basename(file.originalname);
         const tempDir = tmpdir();
-        tempFilePath = join(tempDir, `${note.id}-${file.originalname}`);
+        tempFilePath = join(tempDir, `${note.id}-${safeFilename}`);
 
         // Write buffer to temporary file
         await fs.writeFile(tempFilePath, file.buffer);
@@ -232,8 +233,9 @@ export class NotesService {
       }
 
       // Save to database
+      const safeFilename = basename(file.originalname);
       const updatedNote = await this.repository.update(note.id, {
-        aiTitle: aiResult.title || file.originalname,
+        aiTitle: aiResult.title || safeFilename,
         aiSummary: aiResult.summary,
         aiBullets: aiResult.bullets,
         category: note.category !== 'OTHER' ? note.category : aiResult.category,
