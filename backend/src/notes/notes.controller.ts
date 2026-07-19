@@ -4,52 +4,44 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  MessageEvent,
   NotFoundException,
   Param,
   Post,
-  Sse,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
   BadRequestException,
   Patch,
   Query,
+  Req,
+  ParseFilePipeBuilder,
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { NoteResponseDto } from './dto/note-response.dto';
 import { FindAllNotesQueryDto } from './dto/find-all-notes-query.dto';
-import { Observable, map, merge, interval } from 'rxjs';
 import { Note, Category } from '@prisma/client';
+import { extractBullets } from './utils/note.utils';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import type { Request } from 'express';
+
+interface AuthRequest extends Request {
+  user: { id: string; role: string };
+}
 
 @Controller('notes')
+@UseGuards(JwtAuthGuard)
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
-  @Sse('events')
-  events(): Observable<MessageEvent> {
-    const dataStream$ = this.notesService.getEventStream().pipe(
-      map((event) => ({
-        type: 'note-updated',
-        data: event,
-      })),
-    );
-
-    const keepAliveStream$ = interval(15000).pipe(
-      map(() => ({
-        type: 'ping',
-        data: { timestamp: Date.now() },
-      })),
-    );
-
-    return merge(dataStream$, keepAliveStream$);
-  }
-
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
-  async create(@Body() createNoteDto: CreateNoteDto): Promise<NoteResponseDto> {
-    const note = await this.notesService.create(createNoteDto);
+  async create(
+    @Body() createNoteDto: CreateNoteDto,
+    @Req() req: AuthRequest,
+  ): Promise<NoteResponseDto> {
+    const note = await this.notesService.create(createNoteDto, req.user.id);
     return this.toResponseDto(note);
   }
 
@@ -57,21 +49,40 @@ export class NotesController {
   @HttpCode(HttpStatus.ACCEPTED)
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Body('category') category?: Category,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /(pdf|png|jpeg|jpg|md)$/i,
+        })
+        .addMaxSizeValidator({
+          maxSize: 5 * 1024 * 1024,
+        })
+        .build({
+          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        }),
+    )
+    file: Express.Multer.File,
+    @Body('category') category: Category | undefined,
+    @Body('detailLevel') detailLevel: 'short' | 'medium' | 'long' | undefined,
+    @Req() req: AuthRequest,
   ): Promise<NoteResponseDto> {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-    const note = await this.notesService.createFromFile(file, category);
+    if (!file) throw new BadRequestException('No file uploaded');
+    const note = await this.notesService.createFromFile(
+      file,
+      req.user.id,
+      category,
+      detailLevel,
+    );
     return this.toResponseDto(note);
   }
 
   @Get()
   async findAll(
     @Query() query: FindAllNotesQueryDto,
+    @Req() req: AuthRequest,
   ): Promise<NoteResponseDto[]> {
     const notes = await this.notesService.findAll({
+      userId: req.user.id,
       category: query.category,
       limit: query.limit,
       cursor: query.cursor,
@@ -80,32 +91,39 @@ export class NotesController {
   }
 
   @Get('unread-counts')
-  async getUnreadCounts(): Promise<Record<string, number>> {
-    return this.notesService.getUnreadCounts();
+  async getUnreadCounts(
+    @Req() req: AuthRequest,
+  ): Promise<Record<string, number>> {
+    return this.notesService.getUnreadCounts(req.user.id);
   }
 
   @Post('search')
   @HttpCode(HttpStatus.OK)
-  async search(@Body('query') query: string): Promise<{ answer: string }> {
-    if (!query) {
-      return { answer: 'Please provide a query.' };
-    }
-    const answer = await this.notesService.search(query);
+  async search(
+    @Body('query') query: string,
+    @Req() req: AuthRequest,
+  ): Promise<{ answer: string }> {
+    if (!query) return { answer: 'Please provide a query.' };
+    const answer = await this.notesService.search(query, req.user.id);
     return { answer };
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<NoteResponseDto> {
-    const note = await this.notesService.findOne(id);
-    if (!note) {
-      throw new NotFoundException(`Note with ID ${id} not found`);
-    }
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: AuthRequest,
+  ): Promise<NoteResponseDto> {
+    const note = await this.notesService.findOne(id, req.user.id);
+    if (!note) throw new NotFoundException(`Note with ID ${id} not found`);
     return this.toResponseDto(note);
   }
 
   @Patch(':id/read')
-  async markAsRead(@Param('id') id: string): Promise<NoteResponseDto> {
-    const note = await this.notesService.markAsRead(id);
+  async markAsRead(
+    @Param('id') id: string,
+    @Req() req: AuthRequest,
+  ): Promise<NoteResponseDto> {
+    const note = await this.notesService.markAsRead(id, req.user.id);
     return this.toResponseDto(note);
   }
 
@@ -124,11 +142,7 @@ export class NotesController {
       userInput: note.userInput,
       aiTitle: note.aiTitle,
       aiSummary: note.aiSummary,
-      aiBullets: Array.isArray(note.aiBullets)
-        ? note.aiBullets.filter(
-            (item): item is string => typeof item === 'string',
-          )
-        : null,
+      aiBullets: extractBullets(note.aiBullets),
       content: note.content,
       category: note.category,
       status: note.status,
