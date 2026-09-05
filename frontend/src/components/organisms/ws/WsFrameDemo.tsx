@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import WsCard from '@/components/organisms/ws/WsCard';
 import WsBitCell from '@/components/atoms/ws/WsBitCell';
 import WsOpcodeBadge from '@/components/atoms/ws/WsOpcodeBadge';
@@ -35,13 +35,7 @@ export default function WsFrameDemo() {
   const [fromClient, setFromClient] = useState(true);
   
   // Use a stable initial value to prevent SSR hydration mismatch
-  const [maskKey, setMaskKey] = useState<Uint8Array>(new Uint8Array(4));
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setMaskKey(randomMaskKey());
-    setIsMounted(true);
-  }, []);
+  const [maskKey, setMaskKey] = useState<Uint8Array>(() => new Uint8Array([0x37, 0xfa, 0x21, 0x3d]));
 
   const payloadBytes = new TextEncoder().encode(message);
   const maskedBytes  = fromClient ? xorMask(payloadBytes, maskKey) : payloadBytes;

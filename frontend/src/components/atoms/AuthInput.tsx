@@ -1,6 +1,6 @@
 import * as React from "react"
 
-export interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+export type AuthInputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
   ({ className = "", type, ...props }, ref) => {

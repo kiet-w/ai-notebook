@@ -32,13 +32,14 @@ const safeLookup = (
   options: dns.LookupOptions,
   callback: (
     err: NodeJS.ErrnoException | null,
-    address: string,
+    address: string | dns.LookupAddress[],
     family: number,
   ) => void,
 ) => {
   dns.lookup(hostname, options, (err, address, family) => {
     if (err) return callback(err, address, family);
-    if (isPrivateIp(address)) {
+    const ip = typeof address === 'string' ? address : (address[0]?.address ?? '');
+    if (ip && isPrivateIp(ip)) {
       return callback(
         new Error('SSRF blocked: private IP detected') as NodeJS.ErrnoException,
         '',

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, memo, useMemo, useRef } from 'react';
@@ -216,7 +217,6 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
     return (
       <div className="flex flex-col justify-between h-full w-full">
         {note.url && isImageUrl(note.url) && !imageAspectRatio && (
-          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={note.url}
             alt=""

@@ -54,7 +54,7 @@ export default function AuthTemplate({ children, title, subtitle, type }: AuthTe
           <div className="text-center text-sm text-zinc-500">
             {type === 'login' ? (
               <>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link href="/auth/register" className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
                   Create one
                 </Link>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, Paperclip, XCircle } from 'lucide-react';
 import Button from '../atoms/Button';
 import Input from '../atoms/Input';
@@ -27,25 +27,24 @@ export default function NoteInput({ onSubmit, onUpload, disabled, showCategorySe
   const [content, setContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let url: string | null = null;
+  const previewUrl = useMemo(() => {
     if (selectedFile && selectedFile.type.startsWith('image/')) {
-      url = URL.createObjectURL(selectedFile);
-      setPreviewUrl(url);
-    } else {
-      setPreviewUrl(null);
+      return URL.createObjectURL(selectedFile);
     }
+    return null;
+  }, [selectedFile]);
+
+  useEffect(() => {
     return () => {
-      if (url) {
-        URL.revokeObjectURL(url);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
       }
     };
-  }, [selectedFile]);
+  }, [previewUrl]);
 
   useEffect(() => {
     setTimeout(() => {

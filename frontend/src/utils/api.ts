@@ -55,7 +55,7 @@ apiInstance.interceptors.response.use(
           // Cố gắng gọi api logout để xoá HttpOnly cookie trước khi redirect
           try {
             await axios.post(`${apiInstance.defaults.baseURL}/users/logout`, {}, { withCredentials: true });
-          } catch (e) {}
+          } catch {}
           window.location.href = '/auth/login';
         }
         return Promise.reject(refreshError);
