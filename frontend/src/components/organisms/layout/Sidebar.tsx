@@ -9,7 +9,7 @@ import LanguageSwitcher from '@/components/atoms/common/LanguageSwitcher';
 import { useI18n } from '@/hooks/useI18n';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
-import { getAvailableCategories, getCategoryLabel, getCategoryLucideIcon } from '@/utils/category';
+import { getAvailableCategories, getCategoryLabel } from '@/utils/category';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 export interface SidebarProps {
@@ -133,7 +133,6 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
         )}
         
         {availableCategories.map((catId) => {
-          const IconComponent = getCategoryLucideIcon(catId);
           const unreadCount = unreadCounts?.[catId] || 0;
           const label = getCategoryLabel(catId, t);
           return (
@@ -144,12 +143,9 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
               onClick={() => onSelectCategory(catId)}
             >
               <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2.5">
-                  <Icon icon={IconComponent} className="w-4 h-4" />
-                  <span>{label}</span>
-                </div>
+                <span className="truncate text-xs font-medium">{label}</span>
                 {unreadCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 dark:bg-emerald-500 px-1.5 text-[10px] font-bold text-white tabular-nums shadow-sm">
+                  <span className="flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-emerald-500 dark:bg-emerald-500 px-1.5 text-[10px] font-bold text-white tabular-nums shadow-sm">
                     {unreadCount}
                   </span>
                 )}

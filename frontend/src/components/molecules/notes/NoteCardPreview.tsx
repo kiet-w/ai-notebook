@@ -5,7 +5,7 @@ import React from 'react';
 import { Note } from '@/types/note';
 import Badge from '@/components/atoms/common/Badge';
 import { useI18n } from '@/hooks/useI18n';
-import { getCategoryEmoji, getCategoryLabel } from '@/utils/category';
+import { getCategoryLabel } from '@/utils/category';
 import { getRelativeImageUrl } from '@/utils/image';
 import NoteMarkdownRenderer from '@/components/atoms/notes/NoteMarkdownRenderer';
 import NoteAttachmentCard from './NoteAttachmentCard';
@@ -42,7 +42,6 @@ export function NoteCardPreview({
         </h3>
         {note.category && (
           <Badge 
-            icon={getCategoryEmoji(note.category)} 
             text={getCategoryLabel(note.category, t)} 
           />
         )}

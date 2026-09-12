@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Category } from '@/types/note';
-import { getCategoryEmoji, getCategoryLabel } from '@/utils/category';
+import { getCategoryLabel } from '@/utils/category';
 import { useI18n } from '@/hooks/useI18n';
 
 export interface CategoryGridItemProps {
@@ -15,7 +15,6 @@ export interface CategoryGridItemProps {
 
 export const CategoryGridItem = memo(function CategoryGridItem({
   category,
-  icon,
   name,
   count,
   unreadCount = 0,
@@ -23,31 +22,32 @@ export const CategoryGridItem = memo(function CategoryGridItem({
   className = '',
 }: CategoryGridItemProps) {
   const { t } = useI18n();
-  const displayIcon = icon ?? getCategoryEmoji(category);
   const displayName = name ?? getCategoryLabel(category, t);
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`relative group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 bg-white/50 dark:bg-zinc-900/20 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 cursor-pointer ${className}`}
+      className={`relative group flex flex-col justify-between p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/60 dark:bg-zinc-900/30 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 hover:border-zinc-350 dark:hover:border-zinc-700 transition-all duration-200 cursor-pointer min-h-[68px] text-left ${className}`}
     >
-      {unreadCount > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white tabular-nums shadow-sm border-2 border-white dark:border-zinc-950 z-10">
-          {unreadCount}
+      <div className="flex items-center justify-between w-full">
+        <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 group-hover:text-foreground transition-colors truncate">
+          {displayName}
         </span>
-      )}
-      <span className="text-lg select-none" role="img" aria-label={displayName}>
-        {displayIcon}
-      </span>
-      <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 group-hover:text-foreground transition-colors">
-        {displayName}
-      </span>
-      <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-650 tabular-nums">
-        {count}
-      </span>
+        {unreadCount > 0 && (
+          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white tabular-nums">
+            {unreadCount}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center justify-between w-full mt-2">
+        <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 tabular-nums">
+          {count} {t('notes.items', { count })}
+        </span>
+      </div>
     </button>
   );
 });
 
 export default CategoryGridItem;
+

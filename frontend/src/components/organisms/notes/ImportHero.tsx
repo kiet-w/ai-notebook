@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo, useState } from 'react';
-import { FolderPlus, Plus, Check, AlertCircle } from 'lucide-react';
+import { Plus, Check, AlertCircle } from 'lucide-react';
 import { useI18n } from '@/hooks/useI18n';
 import Icon from '@/components/atoms/common/Icon';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
@@ -44,9 +44,6 @@ export const ImportHero = memo(function ImportHero({ onCreateCategory }: ImportH
 
   return (
     <header className="mb-10 text-center">
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800/40 mb-5 text-2xl shadow-sm border border-zinc-200/40 dark:border-zinc-800/30 select-none">
-        <FolderPlus className="w-6 h-6 text-zinc-700 dark:text-zinc-200" />
-      </div>
       <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight sm:text-4xl mb-2.5">
         {t('notes.importTitle')}
       </h1>

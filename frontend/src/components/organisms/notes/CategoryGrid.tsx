@@ -2,7 +2,7 @@
 
 import React, { memo, useMemo, useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { Category } from '@/types/note';
 import { useI18n } from '@/hooks/useI18n';
 import { getAvailableCategories } from '@/utils/category';
@@ -100,7 +100,7 @@ export const CategoryGrid = memo(function CategoryGrid({
 
         {/* Add Category Card */}
         {isAdding ? (
-          <div className="relative flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm min-h-[82px]">
+          <div className="relative flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm min-h-[68px]">
             <input
               ref={inputRef}
               type="text"
@@ -120,7 +120,7 @@ export const CategoryGrid = memo(function CategoryGrid({
               placeholder={t('notes.newCategory') || 'Tên...'}
               className="w-full text-center text-xs px-1.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:text-zinc-100 placeholder:text-zinc-400"
             />
-            <div className="flex items-center gap-1 mt-0.5">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={handleAddCategory}
@@ -148,14 +148,11 @@ export const CategoryGrid = memo(function CategoryGrid({
           <button
             type="button"
             onClick={() => setIsAdding(true)}
-            className="group flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-900/10 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/30 transition-all duration-200 cursor-pointer min-h-[82px]"
+            className="group flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 bg-zinc-50/40 dark:bg-zinc-900/10 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/30 transition-all duration-200 cursor-pointer min-h-[68px]"
             title={t('notes.addCategory') || 'Thêm danh mục'}
           >
-            <div className="w-6 h-6 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 dark:text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white dark:group-hover:bg-zinc-100 dark:group-hover:text-zinc-900 transition-colors">
-              <Plus className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors">
-              {t('notes.addCategory') || 'Thêm'}
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+              + {t('notes.addCategory') || 'Thêm danh mục'}
             </span>
           </button>
         )}

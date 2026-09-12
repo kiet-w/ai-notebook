@@ -32,7 +32,6 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
     isFetchingNextPage,
     refetch,
     handleSelectCategory,
-    getCategoryIcon,
   } = useCategoryNotes(category);
 
   const localizedCategory = getCategoryLabel(category, t);
@@ -47,11 +46,8 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
       <main className="flex-1 overflow-y-auto scroll-smooth">
         <div className="w-[90%] max-w-[1400px] mx-auto py-16">
           <header className="mb-12">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xl shadow-sm border border-border">
-                {getCategoryIcon()}
-              </div>
-              <h1 className="text-4xl font-extrabold text-foreground tracking-tight">
+            <div className="mb-3">
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
                 {localizedCategory}
               </h1>
             </div>

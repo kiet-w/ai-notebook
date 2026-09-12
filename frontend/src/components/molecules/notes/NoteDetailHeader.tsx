@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { Note } from '@/types/note';
 import Badge from '@/components/atoms/common/Badge';
 import { useI18n } from '@/hooks/useI18n';
-import { getCategoryEmoji, getCategoryLabel } from '@/utils/category';
+import { getCategoryLabel } from '@/utils/category';
 
 export interface NoteDetailHeaderProps {
   note: Note;
@@ -23,7 +23,6 @@ export function NoteDetailHeader({ note, onClose }: NoteDetailHeaderProps) {
         </h3>
         {note.category && (
           <Badge 
-            icon={getCategoryEmoji(note.category)} 
             text={getCategoryLabel(note.category, t)} 
           />
         )}

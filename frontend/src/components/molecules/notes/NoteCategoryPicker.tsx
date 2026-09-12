@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { Category } from '@/types/note';
 import { useI18n } from '@/hooks/useI18n';
-import { getCategoryEmoji, getCategoryLabel } from '@/utils/category';
+import { getCategoryLabel } from '@/utils/category';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 export interface NoteCategoryPickerProps {
@@ -48,7 +48,6 @@ export function NoteCategoryPicker({
   return (
     <div className="flex flex-wrap items-center gap-1.5 px-4 py-2">
       {categories.map((catId) => {
-        const emoji = getCategoryEmoji(catId);
         const label = getCategoryLabel(catId, t);
         const isSelected = selectedCategory === catId;
 
@@ -57,13 +56,12 @@ export function NoteCategoryPicker({
             key={catId}
             type="button"
             onClick={() => onSelectCategory(isSelected ? undefined : (catId as Category))}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 border cursor-pointer ${
+            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 border cursor-pointer ${
               isSelected
-                ? 'bg-zinc-800 text-white border-zinc-700 dark:bg-zinc-200 dark:text-zinc-900 dark:border-zinc-300 shadow-sm'
-                : 'bg-zinc-100 text-zinc-600 border-zinc-200/60 hover:bg-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700/40 dark:hover:bg-zinc-700/50'
+                ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100 shadow-xs'
+                : 'bg-zinc-100/70 text-zinc-600 border-zinc-200/60 hover:bg-zinc-200/70 dark:bg-zinc-800/40 dark:text-zinc-400 dark:border-zinc-800/60 dark:hover:bg-zinc-800/80'
             }`}
           >
-            <span className="text-sm leading-none select-none">{emoji}</span>
             <span>{label}</span>
           </button>
         );
@@ -115,11 +113,10 @@ export function NoteCategoryPicker({
         <button
           type="button"
           onClick={() => setIsAdding(true)}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150 border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
+          className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer"
           title={t('notes.addCategory') || 'Thêm danh mục'}
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>{t('notes.addCategory') || 'Thêm'}</span>
+          <span>+ {t('notes.addCategory') || 'Thêm'}</span>
         </button>
       )}
     </div>

@@ -4,7 +4,7 @@ import React from 'react';
 import { Note } from '@/types/note';
 import Badge from '@/components/atoms/common/Badge';
 import { useI18n } from '@/hooks/useI18n';
-import { getCategoryEmoji, getCategoryLabel } from '@/utils/category';
+import { getCategoryLabel } from '@/utils/category';
 import NoteCardMedia from './NoteCardMedia';
 
 export interface NoteCardLandscapeProps {
@@ -40,7 +40,6 @@ export function NoteCardLandscape({ note, isUnread, parsedDate }: NoteCardLandsc
             </div>
             {note.category && (
               <Badge 
-                icon={getCategoryEmoji(note.category)} 
                 text={getCategoryLabel(note.category, t)} 
               />
             )}
