@@ -8,9 +8,13 @@ import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 export interface ImportHeroProps {
   onCreateCategory?: (name: string) => { success: boolean; error?: string; category?: string };
+  showCreateCategory?: boolean;
 }
 
-export const ImportHero = memo(function ImportHero({ onCreateCategory }: ImportHeroProps) {
+export const ImportHero = memo(function ImportHero({
+  onCreateCategory,
+  showCreateCategory = true,
+}: ImportHeroProps) {
   const { t } = useI18n();
   const { addCategory: defaultAddCategory } = useCustomCategories();
   const [categoryName, setCategoryName] = useState('');
@@ -52,7 +56,8 @@ export const ImportHero = memo(function ImportHero({ onCreateCategory }: ImportH
       </p>
 
       {/* Inline Create Category Form */}
-      <div className="max-w-md mx-auto">
+      {showCreateCategory && (
+        <div className="max-w-md mx-auto">
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <div className="relative flex-1">
             <input
@@ -90,6 +95,7 @@ export const ImportHero = memo(function ImportHero({ onCreateCategory }: ImportH
           </div>
         )}
       </div>
+      )}
     </header>
   );
 });

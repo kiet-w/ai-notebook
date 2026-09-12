@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import NoteInput from '@/components/molecules/notes/NoteInput';
 import AnalyzingToast from '@/components/molecules/notes/AnalyzingToast';
 import { useHomeNotes } from '@/hooks/useHomeNotes';
-import { ImportHero, CategoryGrid, RecentImportsList } from '@/components/organisms/notes';
+import { ImportHero, RecentImportsList } from '@/components/organisms/notes';
 
 const Sidebar = dynamic(() => import('@/components/organisms/layout/Sidebar'), { ssr: false });
 
@@ -13,7 +13,6 @@ export default function HomeTemplate() {
   const {
     unreadCounts,
     recentImports,
-    categoryStats,
     availableCategories,
     isAnalyzing,
     totalNotesCount,
@@ -21,7 +20,6 @@ export default function HomeTemplate() {
     handleUpload,
     handleSelectCategory,
     navigateToCategory,
-    handleCreateCategory,
   } = useHomeNotes();
 
   return (
@@ -34,23 +32,14 @@ export default function HomeTemplate() {
       />
       <main className="flex-1 overflow-y-auto scroll-smooth">
         <div className="w-full max-w-3xl mx-auto px-6 py-16 sm:px-12">
-          <ImportHero onCreateCategory={handleCreateCategory} />
+          <ImportHero showCreateCategory={false} />
 
           <div className="mb-12">
             <NoteInput
               onSubmit={handleCapture}
               onUpload={handleUpload}
-              showCategorySelector
-              categories={availableCategories}
             />
           </div>
-
-          <CategoryGrid
-            unreadCounts={unreadCounts}
-            categoryStats={categoryStats}
-            categories={availableCategories}
-            onSelectCategory={navigateToCategory}
-          />
 
           <RecentImportsList
             recentImports={recentImports}
