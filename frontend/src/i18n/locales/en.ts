@@ -153,6 +153,8 @@ export const en: TranslationDictionary = {
     createCategoryButton: 'Add Category',
     categoryCreatedSuccess: 'Category "{name}" created successfully!',
     categoryExistsError: 'Category "{name}" already exists',
+    addCategory: 'Add Category',
+    newCategory: 'New Category',
   },
   ws: {
     title: 'WebSocket Handshake Hash — Secondary Brain',

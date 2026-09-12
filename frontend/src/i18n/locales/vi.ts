@@ -153,6 +153,8 @@ export const vi: TranslationDictionary = {
     createCategoryButton: 'Tạo danh mục',
     categoryCreatedSuccess: 'Đã tạo danh mục "{name}" thành công!',
     categoryExistsError: 'Danh mục "{name}" đã tồn tại',
+    addCategory: 'Thêm danh mục',
+    newCategory: 'Danh mục mới',
   },
   ws: {
     title: 'WebSocket Handshake Hash — Secondary Brain',

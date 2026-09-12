@@ -156,6 +156,8 @@ export interface NotesTranslations {
   createCategoryButton?: string;
   categoryCreatedSuccess?: string;
   categoryExistsError?: string;
+  addCategory?: string;
+  newCategory?: string;
 }
 
 export interface WsTranslations {

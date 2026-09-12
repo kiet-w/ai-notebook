@@ -1,8 +1,8 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Download, Settings, Brain, LogOut } from 'lucide-react';
+import { Download, Settings, Brain, LogOut, Plus, Check, X } from 'lucide-react';
 import Button from '@/components/atoms/common/Button';
 import Icon from '@/components/atoms/common/Icon';
 import LanguageSwitcher from '@/components/atoms/common/LanguageSwitcher';
@@ -22,7 +22,32 @@ export interface SidebarProps {
 const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unreadCounts, categories }: SidebarProps) {
   const router = useRouter();
   const { t } = useI18n();
-  const { customCategories } = useCustomCategories();
+  const { customCategories, addCategory } = useCustomCategories();
+  const [isAdding, setIsAdding] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isAdding) {
+      inputRef.current?.focus();
+    }
+  }, [isAdding]);
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newCatName.trim();
+    if (!trimmed) {
+      setIsAdding(false);
+      return;
+    }
+
+    const res = addCategory(trimmed);
+    if (res.success && res.category) {
+      onSelectCategory(res.category);
+    }
+    setNewCatName('');
+    setIsAdding(false);
+  };
 
   const availableCategories = useMemo(() => {
     const allCustom = categories ? Array.from(new Set([...categories, ...customCategories])) : customCategories;
@@ -55,11 +80,57 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
           </div>
         </Button>
 
-        <div className="mt-6 mb-2">
-          <h2 className="px-3.5 font-mono text-[9px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-500 font-medium">
+        <div className="mt-6 mb-2 flex items-center justify-between px-3.5">
+          <h2 className="font-mono text-[9px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-500 font-medium">
             {t('sidebar.categoriesTitle')}
           </h2>
+          <button
+            type="button"
+            onClick={() => setIsAdding((prev) => !prev)}
+            className="p-0.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded transition-colors cursor-pointer"
+            title={t('notes.addCategory') || 'Thêm danh mục'}
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
         </div>
+
+        {isAdding && (
+          <form onSubmit={handleAddCategory} className="px-2 mb-2 flex items-center gap-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setIsAdding(false);
+                  setNewCatName('');
+                }
+              }}
+              placeholder={t('notes.newCategory') || 'Tên...'}
+              className="w-full text-xs px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:text-zinc-100 placeholder:text-zinc-400"
+            />
+            <button
+              type="submit"
+              disabled={!newCatName.trim()}
+              className="p-1 rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 disabled:opacity-30 cursor-pointer shrink-0 hover:opacity-90"
+              title={t('common.save')}
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAdding(false);
+                setNewCatName('');
+              }}
+              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer shrink-0"
+              title={t('common.cancel')}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        )}
         
         {availableCategories.map((catId) => {
           const IconComponent = getCategoryLucideIcon(catId);

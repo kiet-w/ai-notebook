@@ -1,7 +1,8 @@
 'use client';
 
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Plus, Check, X } from 'lucide-react';
 import { Category } from '@/types/note';
 import { useI18n } from '@/hooks/useI18n';
 import { getAvailableCategories } from '@/utils/category';
@@ -23,7 +24,17 @@ export const CategoryGrid = memo(function CategoryGrid({
 }: CategoryGridProps) {
   const router = useRouter();
   const { t } = useI18n();
-  const { customCategories } = useCustomCategories();
+  const { customCategories, addCategory } = useCustomCategories();
+  const [isAdding, setIsAdding] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isAdding) {
+      inputRef.current?.focus();
+    }
+  }, [isAdding]);
 
   const availableCategories = useMemo(() => {
     const allCustom = categories ? Array.from(new Set([...categories, ...customCategories])) : customCategories;
@@ -38,11 +49,40 @@ export const CategoryGrid = memo(function CategoryGrid({
     }
   };
 
+  const handleAddCategory = () => {
+    const trimmed = newCatName.trim();
+    if (!trimmed) {
+      setIsAdding(false);
+      return;
+    }
+
+    const res = addCategory(trimmed);
+    if (res.success) {
+      setNewCatName('');
+      setIsAdding(false);
+      setErrorMsg(null);
+    } else {
+      setErrorMsg(
+        res.error === 'Category already exists'
+          ? t('notes.categoryExistsError', { name: trimmed })
+          : res.error || 'Failed'
+      );
+    }
+  };
+
   return (
     <div className="mb-10">
-      <h2 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.18em] mb-4 select-none">
-        {t('notes.categories')}
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.18em] select-none">
+          {t('notes.categories')}
+        </h2>
+        {errorMsg && (
+          <span className="text-[11px] text-red-500 dark:text-red-400 font-medium">
+            {errorMsg}
+          </span>
+        )}
+      </div>
+
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
         {availableCategories.map((cat) => {
           const unreadCount = unreadCounts[cat] || 0;
@@ -57,9 +97,72 @@ export const CategoryGrid = memo(function CategoryGrid({
             />
           );
         })}
+
+        {/* Add Category Card */}
+        {isAdding ? (
+          <div className="relative flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm min-h-[82px]">
+            <input
+              ref={inputRef}
+              type="text"
+              value={newCatName}
+              onChange={(e) => {
+                setNewCatName(e.target.value);
+                if (errorMsg) setErrorMsg(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddCategory();
+                if (e.key === 'Escape') {
+                  setIsAdding(false);
+                  setNewCatName('');
+                  setErrorMsg(null);
+                }
+              }}
+              placeholder={t('notes.newCategory') || 'Tên...'}
+              className="w-full text-center text-xs px-1.5 py-1 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:text-zinc-100 placeholder:text-zinc-400"
+            />
+            <div className="flex items-center gap-1 mt-0.5">
+              <button
+                type="button"
+                onClick={handleAddCategory}
+                disabled={!newCatName.trim()}
+                className="p-1 rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 disabled:opacity-30 cursor-pointer"
+                title={t('common.save')}
+              >
+                <Check className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAdding(false);
+                  setNewCatName('');
+                  setErrorMsg(null);
+                }}
+                className="p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                title={t('common.cancel')}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsAdding(true)}
+            className="group flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-900/10 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/30 transition-all duration-200 cursor-pointer min-h-[82px]"
+            title={t('notes.addCategory') || 'Thêm danh mục'}
+          >
+            <div className="w-6 h-6 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 dark:text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white dark:group-hover:bg-zinc-100 dark:group-hover:text-zinc-900 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-200 transition-colors">
+              {t('notes.addCategory') || 'Thêm'}
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );
 });
 
 export default CategoryGrid;
+
