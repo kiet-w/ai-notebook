@@ -3,10 +3,13 @@ import {
   getCategoryLucideIcon,
   getCategoryEmoji,
   getCategoryLabel,
+  getCategoryItem,
   getAvailableCategories,
+  isDefaultCategory,
+  isValidCategoryName,
   DEFAULT_CATEGORIES,
 } from '../category';
-import { Folder, Soup, Terminal } from 'lucide-react';
+import { Folder, Soup, Terminal, Palette, Plane } from 'lucide-react';
 
 describe('category utils', () => {
   describe('normalizeCategoryName', () => {
@@ -16,13 +19,27 @@ describe('category utils', () => {
       expect(normalizeCategoryName('  learning ')).toBe('Learning');
     });
 
-    it('capitalizes custom categories', () => {
+    it('capitalizes custom categories and lowercases rest', () => {
       expect(normalizeCategoryName('design')).toBe('Design');
-      expect(normalizeCategoryName('marketing')).toBe('Marketing');
+      expect(normalizeCategoryName('MARKETING')).toBe('Marketing');
     });
 
     it('handles empty input gracefully', () => {
       expect(normalizeCategoryName('')).toBe('');
+    });
+  });
+
+  describe('isDefaultCategory and isValidCategoryName', () => {
+    it('correctly identifies default categories', () => {
+      expect(isDefaultCategory('Cooking')).toBe(true);
+      expect(isDefaultCategory('tech')).toBe(true);
+      expect(isDefaultCategory('Design')).toBe(false);
+    });
+
+    it('validates category names', () => {
+      expect(isValidCategoryName('Design').valid).toBe(true);
+      expect(isValidCategoryName('').valid).toBe(false);
+      expect(isValidCategoryName('a'.repeat(35)).valid).toBe(false);
     });
   });
 
@@ -32,8 +49,13 @@ describe('category utils', () => {
       expect(getCategoryLucideIcon('Tech')).toBe(Terminal);
     });
 
+    it('returns preset icon for popular custom categories', () => {
+      expect(getCategoryLucideIcon('Design')).toBe(Palette);
+      expect(getCategoryLucideIcon('travel')).toBe(Plane);
+    });
+
     it('falls back to Folder for unknown or null category', () => {
-      expect(getCategoryLucideIcon('Unknown')).toBe(Folder);
+      expect(getCategoryLucideIcon('RandomCat')).toBe(Folder);
       expect(getCategoryLucideIcon(null)).toBe(Folder);
       expect(getCategoryLucideIcon(undefined)).toBe(Folder);
     });
@@ -46,13 +68,18 @@ describe('category utils', () => {
       expect(getCategoryEmoji('Learning')).toBe('📚');
     });
 
-    it('returns fallback emoji for custom categories', () => {
-      expect(getCategoryEmoji('Design')).toBe('📁');
+    it('returns smart preset emoji for popular custom categories', () => {
+      expect(getCategoryEmoji('Design')).toBe('🎨');
+      expect(getCategoryEmoji('Travel')).toBe('✈️');
+    });
+
+    it('returns fallback emoji for unknown custom categories', () => {
+      expect(getCategoryEmoji('UnknownCategory')).toBe('📁');
       expect(getCategoryEmoji(null)).toBe('📝');
     });
   });
 
-  describe('getCategoryLabel', () => {
+  describe('getCategoryLabel and getCategoryItem', () => {
     it('returns translation if translate function is provided', () => {
       const mockT = (key: string) => {
         if (key === 'categories.cooking') return 'Nấu ăn';
@@ -64,6 +91,13 @@ describe('category utils', () => {
     it('returns formatted category name without translate function', () => {
       expect(getCategoryLabel('cooking')).toBe('Cooking');
       expect(getCategoryLabel('custom-tag')).toBe('Custom-tag');
+    });
+
+    it('returns complete CategoryItem object', () => {
+      const item = getCategoryItem('design');
+      expect(item.id).toBe('Design');
+      expect(item.emoji).toBe('🎨');
+      expect(item.name).toBe('Design');
     });
   });
 
