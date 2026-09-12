@@ -7,6 +7,7 @@ import NoteCard from '@/components/organisms/notes/NoteCard';
 import Sidebar from '@/components/organisms/layout/Sidebar';
 import { useCategoryNotes } from '@/hooks/useCategoryNotes';
 import { useI18n } from '@/hooks/useI18n';
+import { getCategoryLabel } from '@/utils/category';
 
 const NoteDetailModal = dynamic(() => import('@/components/organisms/notes/NoteDetailModal'), {
   ssr: false,
@@ -34,7 +35,7 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
     getCategoryIcon,
   } = useCategoryNotes(category);
 
-  const localizedCategory = t(`categories.${category}`);
+  const localizedCategory = getCategoryLabel(category, t);
 
   return (
     <div className="flex h-screen bg-background font-sans overflow-hidden">

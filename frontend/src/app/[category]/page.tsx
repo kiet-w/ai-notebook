@@ -1,4 +1,5 @@
 import CategoryTemplate from '@/components/templates/notes/CategoryTemplate';
+import { normalizeCategoryName } from '@/utils/category';
 
 export const dynamic = 'force-dynamic';
 
@@ -6,19 +7,8 @@ interface CategoryPageProps {
   params: Promise<{ category: string }>;
 }
 
-function normalizeCategoryParam(param: string): string {
-  const lowercase = param.toLowerCase();
-  if (lowercase === 'cooking') return 'Cooking';
-  if (lowercase === 'tech') return 'Tech';
-  if (lowercase === 'learning') return 'Learning';
-  if (lowercase === 'work') return 'Work';
-  if (lowercase === 'finance') return 'Finance';
-  if (lowercase === 'other') return 'Other';
-  return param;
-}
-
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const category = (await params).category;
-  const normalizedCategory = normalizeCategoryParam(category);
+  const normalizedCategory = normalizeCategoryName(decodeURIComponent(category));
   return <CategoryTemplate key={normalizedCategory} category={normalizedCategory} />;
 }

@@ -152,6 +152,10 @@ export interface NotesTranslations {
   clickToZoom: string;
   openOriginal: string;
   aiAnalyzingImage: string;
+  createCategoryPlaceholder?: string;
+  createCategoryButton?: string;
+  categoryCreatedSuccess?: string;
+  categoryExistsError?: string;
 }
 
 export interface WsTranslations {

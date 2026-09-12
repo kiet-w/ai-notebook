@@ -1,39 +1,36 @@
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Category } from '@/types/note';
 import { useI18n } from '@/hooks/useI18n';
+import { getAvailableCategories } from '@/utils/category';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
+import CategoryGridItem from '@/components/molecules/notes/CategoryGridItem';
 
 export interface CategoryGridProps {
   categoryStats?: Record<string, number>;
   unreadCounts?: Record<string, number>;
   onSelectCategory?: (category: Category | string) => void;
+  categories?: string[];
 }
-
-interface CategoryItemConfig {
-  id: Category;
-  icon: string;
-}
-
-const CATEGORIES: CategoryItemConfig[] = [
-  { id: 'Cooking', icon: '🍳' },
-  { id: 'Tech', icon: '💻' },
-  { id: 'Learning', icon: '📚' },
-  { id: 'Work', icon: '💼' },
-  { id: 'Finance', icon: '💰' },
-  { id: 'Other', icon: '📝' },
-];
 
 export const CategoryGrid = memo(function CategoryGrid({
   categoryStats = {},
   unreadCounts = {},
   onSelectCategory,
+  categories,
 }: CategoryGridProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const { customCategories } = useCustomCategories();
 
-  const handleSelect = (category: Category) => {
+  const availableCategories = useMemo(() => {
+    const allCustom = categories ? Array.from(new Set([...categories, ...customCategories])) : customCategories;
+    return getAvailableCategories(categoryStats, unreadCounts, allCustom);
+  }, [categoryStats, unreadCounts, categories, customCategories]);
+
+  const handleSelect = (category: string) => {
     if (onSelectCategory) {
       onSelectCategory(category);
     } else {
@@ -47,27 +44,17 @@ export const CategoryGrid = memo(function CategoryGrid({
         {t('notes.categories')}
       </h2>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-        {CATEGORIES.map(({ id: cat, icon }) => {
+        {availableCategories.map((cat) => {
           const unreadCount = unreadCounts[cat] || 0;
+          const count = categoryStats[cat] || 0;
           return (
-            <button
+            <CategoryGridItem
               key={cat}
+              category={cat}
+              count={count}
+              unreadCount={unreadCount}
               onClick={() => handleSelect(cat)}
-              className="relative group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 bg-white/50 dark:bg-zinc-900/20 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 cursor-pointer"
-            >
-              {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white tabular-nums shadow-sm border-2 border-white dark:border-zinc-950 z-10">
-                  {unreadCount}
-                </span>
-              )}
-              <span className="text-lg select-none">{icon}</span>
-              <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 group-hover:text-foreground transition-colors">
-                {t(`categories.${cat}`)}
-              </span>
-              <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-650 tabular-nums">
-                {categoryStats[cat] || 0}
-              </span>
-            </button>
+            />
           );
         })}
       </div>

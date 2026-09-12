@@ -6,6 +6,7 @@ import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { api, Note } from '@/utils/api';
 import { Category } from '@/types/note';
 import { groupNotesByDate, GroupedNotes } from '@/utils/date';
+import { getCategoryEmoji } from '@/utils/category';
 
 export function useCategoryNotes(category: string) {
   const router = useRouter();
@@ -72,22 +73,7 @@ export function useCategoryNotes(category: string) {
   );
 
   const getCategoryIcon = useCallback(() => {
-    switch (category) {
-      case 'Cooking':
-        return '🍳';
-      case 'Tech':
-        return '💻';
-      case 'Learning':
-        return '📚';
-      case 'Work':
-        return '💼';
-      case 'Finance':
-        return '💰';
-      case 'Other':
-        return '📝';
-      default:
-        return '🧠';
-    }
+    return getCategoryEmoji(category);
   }, [category]);
 
   return {

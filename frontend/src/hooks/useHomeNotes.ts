@@ -6,6 +6,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, Note } from '@/utils/api';
 import { Category } from '@/types/note';
 import { compressAndResizeImage } from '@/utils/image';
+import { getAvailableCategories } from '@/utils/category';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 export interface RecentImport {
   id: string;
@@ -18,6 +20,7 @@ export interface RecentImport {
 export function useHomeNotes() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { customCategories, addCategory, deleteCategory } = useCustomCategories();
   const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
 
   const { data: notes = [] } = useQuery<Note[]>({
@@ -127,6 +130,10 @@ export function useHomeNotes() {
     return counts;
   }, [notes]);
 
+  const availableCategories = useMemo(() => {
+    return getAvailableCategories(categoryStats, unreadCounts, customCategories);
+  }, [categoryStats, unreadCounts, customCategories]);
+
   const totalNotesCount = notes.length;
 
   return {
@@ -134,6 +141,8 @@ export function useHomeNotes() {
     unreadCounts,
     recentImports,
     categoryStats,
+    availableCategories,
+    customCategories,
     isAnalyzing,
     totalNotesCount,
     pendingNoteId,
@@ -141,5 +150,7 @@ export function useHomeNotes() {
     handleUpload,
     handleSelectCategory,
     navigateToCategory,
+    handleCreateCategory: addCategory,
+    handleDeleteCategory: deleteCategory,
   };
 }

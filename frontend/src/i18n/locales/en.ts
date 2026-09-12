@@ -149,6 +149,10 @@ export const en: TranslationDictionary = {
     clickToZoom: 'Click to zoom',
     openOriginal: 'Open original',
     aiAnalyzingImage: 'AI analyzing image...',
+    createCategoryPlaceholder: 'Create a new category (e.g. Design, Research)...',
+    createCategoryButton: 'Add Category',
+    categoryCreatedSuccess: 'Category "{name}" created successfully!',
+    categoryExistsError: 'Category "{name}" already exists',
   },
   ws: {
     title: 'WebSocket Handshake Hash — Secondary Brain',

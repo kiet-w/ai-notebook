@@ -1,5 +1,6 @@
-import { Note, Category } from '@/types/note';
+import { Note } from '@/types/note';
 import axios from 'axios';
+import { normalizeCategoryName } from '@/utils/category';
 
 const apiInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
@@ -66,7 +67,7 @@ apiInstance.interceptors.response.use(
   }
 );
 
-type ApiCategory = 'COOKING' | 'TECH' | 'LEARNING' | 'WORK' | 'FINANCE' | 'OTHER';
+type ApiCategory = string;
 
 interface ApiNote {
   id: string;
@@ -76,29 +77,18 @@ interface ApiNote {
   aiTitle: string | null;
   aiSummary: string | null;
   aiBullets: string[] | null;
-  category: ApiCategory;
+  category: ApiCategory | null;
   status: Note['status'];
   isRead: boolean;
   createdAt: string;
 }
 
-const CATEGORY_LABELS: Record<ApiCategory, Note['category']> = {
-  COOKING: 'Cooking',
-  TECH: 'Tech',
-  LEARNING: 'Learning',
-  WORK: 'Work',
-  FINANCE: 'Finance',
-  OTHER: 'Other',
-};
-
-const REVERSE_CATEGORY_MAP: Record<Category, ApiCategory> = {
-  Cooking: 'COOKING',
-  Tech: 'TECH',
-  Learning: 'LEARNING',
-  Work: 'WORK',
-  Finance: 'FINANCE',
-  Other: 'OTHER',
-};
+export function toApiCategory(category?: string | null): string | undefined {
+  if (!category) return undefined;
+  const trimmed = category.trim();
+  if (!trimmed) return undefined;
+  return trimmed.toUpperCase();
+}
 
 export function normalizeNote(note: ApiNote): Note {
   return {
@@ -106,7 +96,7 @@ export function normalizeNote(note: ApiNote): Note {
     content: note.content ?? note.userInput ?? note.url ?? '',
     url: note.url ?? undefined,
     title: note.aiTitle ?? undefined,
-    category: CATEGORY_LABELS[note.category],
+    category: note.category ? normalizeCategoryName(note.category) : undefined,
     summary: note.aiSummary ?? undefined,
     bullets: note.aiBullets ?? undefined,
     status: note.status,
@@ -116,8 +106,8 @@ export function normalizeNote(note: ApiNote): Note {
 }
 
 export const api = {
-  async fetchNotes(category?: Category, limit?: number, cursor?: string): Promise<Note[]> {
-    const apiCategory = category ? REVERSE_CATEGORY_MAP[category] : undefined;
+  async fetchNotes(category?: string, limit?: number, cursor?: string): Promise<Note[]> {
+    const apiCategory = toApiCategory(category);
     const params = new URLSearchParams();
     if (apiCategory) params.append('category', apiCategory);
     if (limit !== undefined) params.append('limit', limit.toString());
@@ -126,13 +116,24 @@ export const api = {
     return (res.data as ApiNote[]).map(normalizeNote);
   },
 
-  async fetchUnreadCounts(): Promise<Record<Category, number>> {
+  async fetchUnreadCounts(): Promise<Record<string, number>> {
     const res = await apiInstance.get('/notes/unread-counts');
-    return res.data as Record<Category, number>;
+    const rawCounts = (res.data || {}) as Record<string, number>;
+    const normalizedCounts: Record<string, number> = {};
+
+    Object.entries(rawCounts).forEach(([catKey, count]) => {
+      if (typeof count === 'number') {
+        const normalized = normalizeCategoryName(catKey);
+        normalizedCounts[normalized] = (normalizedCounts[normalized] || 0) + count;
+        normalizedCounts[catKey] = count;
+      }
+    });
+
+    return normalizedCounts;
   },
 
-  async createNote(content: string, category?: Category): Promise<Note> {
-    const apiCategory = category ? REVERSE_CATEGORY_MAP[category] : undefined;
+  async createNote(content: string, category?: string): Promise<Note> {
+    const apiCategory = toApiCategory(category);
     const res = await apiInstance.post('/notes', { 
       userInput: content, 
       category: apiCategory 
@@ -140,11 +141,12 @@ export const api = {
     return normalizeNote(res.data as ApiNote);
   },
 
-  async uploadFile(file: File, category?: Category): Promise<Note> {
+  async uploadFile(file: File, category?: string): Promise<Note> {
     const formData = new FormData();
     formData.append('file', file);
-    if (category) {
-      formData.append('category', REVERSE_CATEGORY_MAP[category]);
+    const apiCategory = toApiCategory(category);
+    if (apiCategory) {
+      formData.append('category', apiCategory);
     }
     const res = await apiInstance.post('/notes/upload', formData, {
       headers: {

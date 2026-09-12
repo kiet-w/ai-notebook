@@ -1,42 +1,33 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import Link from 'next/link';
-import { Download, Settings, Soup, Terminal, BookOpen, Briefcase, Coins, Folder, Brain, LucideIcon, LogOut } from 'lucide-react';
+import { Download, Settings, Brain, LogOut } from 'lucide-react';
 import Button from '@/components/atoms/common/Button';
 import Icon from '@/components/atoms/common/Icon';
 import LanguageSwitcher from '@/components/atoms/common/LanguageSwitcher';
 import { useI18n } from '@/hooks/useI18n';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
+import { getAvailableCategories, getCategoryLabel, getCategoryLucideIcon } from '@/utils/category';
+import { useCustomCategories } from '@/hooks/useCustomCategories';
 
 export interface SidebarProps {
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
   unreadCounts?: Record<string, number>;
+  categories?: string[];
 }
 
-const CATEGORIES = [
-  { id: 'Cooking', key: 'cooking', fallback: 'Cooking' },
-  { id: 'Tech', key: 'tech', fallback: 'Tech' },
-  { id: 'Learning', key: 'learning', fallback: 'Learning' },
-  { id: 'Work', key: 'work', fallback: 'Work' },
-  { id: 'Finance', key: 'finance', fallback: 'Finance' },
-  { id: 'Other', key: 'other', fallback: 'Other' },
-] as const;
-
-const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  Cooking: Soup,
-  Tech: Terminal,
-  Learning: BookOpen,
-  Work: Briefcase,
-  Finance: Coins,
-  Other: Folder,
-};
-
-const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unreadCounts }: SidebarProps) {
+const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unreadCounts, categories }: SidebarProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const { customCategories } = useCustomCategories();
+
+  const availableCategories = useMemo(() => {
+    const allCustom = categories ? Array.from(new Set([...categories, ...customCategories])) : customCategories;
+    return getAvailableCategories(undefined, unreadCounts, allCustom);
+  }, [unreadCounts, categories, customCategories]);
 
   return (
     <aside className="w-64 shrink-0 bg-sidebar dark:bg-[#09090b]/40 border-r border-zinc-200/50 dark:border-zinc-900/45 flex flex-col h-full sticky top-0 px-4 py-6 select-none backdrop-blur-md">
@@ -70,16 +61,16 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
           </h2>
         </div>
         
-        {CATEGORIES.map((cat) => {
-          const IconComponent = CATEGORY_ICONS[cat.id] || Folder;
-          const unreadCount = unreadCounts?.[cat.id] || 0;
-          const label = t(`categories.${cat.key}`) || cat.fallback;
+        {availableCategories.map((catId) => {
+          const IconComponent = getCategoryLucideIcon(catId);
+          const unreadCount = unreadCounts?.[catId] || 0;
+          const label = getCategoryLabel(catId, t);
           return (
             <Button
-              key={cat.id}
+              key={catId}
               variant="nav"
-              isActive={selectedCategory === cat.id}
-              onClick={() => onSelectCategory(cat.id)}
+              isActive={selectedCategory === catId}
+              onClick={() => onSelectCategory(catId)}
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2.5">

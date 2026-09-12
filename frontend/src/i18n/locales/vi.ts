@@ -149,6 +149,10 @@ export const vi: TranslationDictionary = {
     clickToZoom: 'Phóng to',
     openOriginal: 'Mở ảnh gốc',
     aiAnalyzingImage: 'AI đang phân tích ảnh...',
+    createCategoryPlaceholder: 'Tạo danh mục mới (ví dụ: Thiết kế, Nghiên cứu)...',
+    createCategoryButton: 'Tạo danh mục',
+    categoryCreatedSuccess: 'Đã tạo danh mục "{name}" thành công!',
+    categoryExistsError: 'Danh mục "{name}" đã tồn tại',
   },
   ws: {
     title: 'WebSocket Handshake Hash — Secondary Brain',

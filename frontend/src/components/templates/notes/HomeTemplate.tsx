@@ -14,12 +14,14 @@ export default function HomeTemplate() {
     unreadCounts,
     recentImports,
     categoryStats,
+    availableCategories,
     isAnalyzing,
     totalNotesCount,
     handleCapture,
     handleUpload,
     handleSelectCategory,
     navigateToCategory,
+    handleCreateCategory,
   } = useHomeNotes();
 
   return (
@@ -28,22 +30,25 @@ export default function HomeTemplate() {
         selectedCategory={null}
         onSelectCategory={handleSelectCategory}
         unreadCounts={unreadCounts}
+        categories={availableCategories}
       />
       <main className="flex-1 overflow-y-auto scroll-smooth">
         <div className="w-full max-w-3xl mx-auto px-6 py-16 sm:px-12">
-          <ImportHero />
+          <ImportHero onCreateCategory={handleCreateCategory} />
 
           <div className="mb-12">
             <NoteInput
               onSubmit={handleCapture}
               onUpload={handleUpload}
               showCategorySelector
+              categories={availableCategories}
             />
           </div>
 
           <CategoryGrid
             unreadCounts={unreadCounts}
             categoryStats={categoryStats}
+            categories={availableCategories}
             onSelectCategory={navigateToCategory}
           />
 

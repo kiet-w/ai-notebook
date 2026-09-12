@@ -2,24 +2,10 @@
 
 import React, { useState } from 'react';
 import WsCard from '@/components/organisms/ws/WsCard';
+import WsPushTargets, { type UserTarget } from '@/components/molecules/ws/WsPushTargets';
+import WsPushEventLog, { type PushEvent } from '@/components/molecules/ws/WsPushEventLog';
 
-interface User {
-  id: string;
-  label: string;
-  colorClass: string;
-  dotColor: string;
-}
-
-interface PushEvent {
-  id: string;
-  targetUserId: string;
-  event: string;
-  payload: string;
-  ts: string;
-  receivedBy: string[];
-}
-
-const USERS: User[] = [
+const USERS: UserTarget[] = [
   { id: 'user-1', label: 'User #1 (2 tabs)', colorClass: 'border-blue-500/50 bg-blue-500/[0.07] text-blue-300',    dotColor: 'bg-blue-400' },
   { id: 'user-2', label: 'User #2 (1 tab)',  colorClass: 'border-purple-500/50 bg-purple-500/[0.07] text-purple-300', dotColor: 'bg-purple-400' },
   { id: 'user-3', label: 'User #3 (1 tab)',  colorClass: 'border-emerald-500/50 bg-emerald-500/[0.07] text-emerald-300', dotColor: 'bg-emerald-400' },
@@ -38,10 +24,6 @@ function nowTs() {
   return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}`;
 }
 
-/**
- * Phase 4 — Server push demo.
- * Visualizes server.to(room).emit() delivering frames to the right sockets only.
- */
 export default function WsPushDemo() {
   const [targetUserId, setTargetUserId] = useState('user-1');
   const [eventName, setEventName]       = useState('note-created');
@@ -55,15 +37,14 @@ export default function WsPushDemo() {
     setBroadcasting(true);
     const receivers = SOCKETS[targetUserId] ?? [];
 
-    // Animate highlight after short delay
     setTimeout(() => {
       setHighlighted(receivers);
       const entry: PushEvent = {
-        id:         String(Date.now()),
+        id: String(Date.now()),
         targetUserId,
-        event:      eventName,
+        event: eventName,
         payload,
-        ts:         nowTs(),
+        ts: nowTs(),
         receivedBy: receivers,
       };
       setPushLog((prev) => [entry, ...prev].slice(0, 6));
@@ -78,7 +59,6 @@ export default function WsPushDemo() {
   return (
     <WsCard title="ws-push-demo — server.to(room).emit()">
       <div className="p-4 flex flex-col gap-4">
-
         {/* Code */}
         <div className="rounded border border-white/[0.07] bg-zinc-950/60 p-3 font-mono text-[11.5px] leading-relaxed">
           <span className="text-yellow-300">this</span>
@@ -105,7 +85,7 @@ export default function WsPushDemo() {
                     key={u.id}
                     id={`push-target-${u.id}`}
                     onClick={() => setTargetUserId(u.id)}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded border text-left transition-all font-mono text-[11px] ${
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded border text-left transition-all font-mono text-[11px] cursor-pointer ${
                       targetUserId === u.id
                         ? u.colorClass
                         : 'border-white/[0.06] text-zinc-500 hover:border-white/[0.12]'
@@ -151,63 +131,22 @@ export default function WsPushDemo() {
               id="push-emit-btn"
               onClick={emit}
               disabled={broadcasting}
-              className="px-4 py-2 rounded font-mono text-[11px] font-medium bg-emerald-500 text-zinc-950 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[.97] transition-all"
+              className="px-4 py-2 rounded font-mono text-[11px] font-medium bg-emerald-500 text-zinc-950 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[.97] transition-all cursor-pointer"
             >
               {broadcasting ? '⟳ Emitting...' : '▶ server.to(room).emit()'}
             </button>
           </div>
 
-          {/* Visualization */}
+          {/* Visualization & History */}
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-600 mb-2">
-              Socket delivery visualization
-            </p>
-            <div className="flex flex-col gap-1.5">
-              {USERS.map((u) => (
-                <div key={u.id}>
-                  <div className={`text-[10px] font-mono mb-0.5 ${targetUserId === u.id && broadcasting ? 'text-zinc-300' : 'text-zinc-600'}`}>
-                    room &quot;{u.id}&quot;
-                  </div>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {SOCKETS[u.id].map((sid) => {
-                      const isReceiving = highlighted.includes(sid);
-                      return (
-                        <div
-                          key={sid}
-                          className={`font-mono text-[10px] px-2 py-1 rounded border transition-all duration-300 ${
-                            isReceiving
-                              ? u.colorClass + ' shadow-sm scale-105'
-                              : 'border-zinc-800 text-zinc-600'
-                          }`}
-                        >
-                          {isReceiving && <span className="mr-1">📨</span>}
-                          {sid}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Push log */}
-            <div className="mt-3">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-600 mb-1">Push history</p>
-              <div className="space-y-1 font-mono text-[10.5px] max-h-28 overflow-y-auto">
-                {pushLog.length === 0 ? (
-                  <span className="text-zinc-700">Chưa có push nào...</span>
-                ) : (
-                  pushLog.map((e) => (
-                    <div key={e.id} className="text-zinc-600">
-                      <span className="text-zinc-700">[{e.ts}]</span>{' '}
-                      <span className="text-emerald-400">→ {e.targetUserId}</span>{' '}
-                      <span className="text-blue-300">&apos;{e.event}&apos;</span>{' '}
-                      <span className="text-zinc-700">({e.receivedBy.length} socket{e.receivedBy.length > 1 ? 's' : ''})</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            <WsPushTargets
+              users={USERS}
+              sockets={SOCKETS}
+              targetUserId={targetUserId}
+              highlighted={highlighted}
+              broadcasting={broadcasting}
+            />
+            <WsPushEventLog logs={pushLog} />
           </div>
         </div>
 
@@ -217,7 +156,6 @@ export default function WsPushDemo() {
           khác (ngay sau khi DB lưu xong) — không cần client gửi request nào cả.
           Đây chính là <span className="text-zinc-300 font-medium">real-time push</span> thật sự.
         </div>
-
       </div>
     </WsCard>
   );

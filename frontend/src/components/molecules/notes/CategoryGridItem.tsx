@@ -1,8 +1,10 @@
 import React, { memo } from 'react';
 import { Category } from '@/types/note';
+import { getCategoryEmoji, getCategoryLabel } from '@/utils/category';
+import { useI18n } from '@/hooks/useI18n';
 
 export interface CategoryGridItemProps {
-  category: Category;
+  category: Category | string;
   icon?: string;
   name?: string;
   count: number;
@@ -10,15 +12,6 @@ export interface CategoryGridItemProps {
   onClick: () => void;
   className?: string;
 }
-
-const DEFAULT_CATEGORY_ICONS: Record<Category, string> = {
-  Cooking: '🍳',
-  Tech: '💻',
-  Learning: '📚',
-  Work: '💼',
-  Finance: '💰',
-  Other: '📝',
-};
 
 export const CategoryGridItem = memo(function CategoryGridItem({
   category,
@@ -29,8 +22,9 @@ export const CategoryGridItem = memo(function CategoryGridItem({
   onClick,
   className = '',
 }: CategoryGridItemProps) {
-  const displayIcon = icon ?? DEFAULT_CATEGORY_ICONS[category] ?? '📝';
-  const displayName = name ?? category;
+  const { t } = useI18n();
+  const displayIcon = icon ?? getCategoryEmoji(category);
+  const displayName = name ?? getCategoryLabel(category, t);
 
   return (
     <button
