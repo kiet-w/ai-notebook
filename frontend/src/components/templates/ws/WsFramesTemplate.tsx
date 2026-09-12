@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import WsBadge from '@/components/atoms/ws/WsBadge';
 import WsFrameDemo from '@/components/organisms/ws/WsFrameDemo';
@@ -6,6 +8,7 @@ import WsPushDemo from '@/components/organisms/ws/WsPushDemo';
 import WsBidirectionalDemo from '@/components/organisms/ws/WsBidirectionalDemo';
 import WsCycleSummary from '@/components/organisms/ws/WsCycleSummary';
 import Link from 'next/link';
+import { useI18n } from '@/hooks/useI18n';
 
 interface SectionProps {
   phase: string;
@@ -36,6 +39,8 @@ function Section({ phase, label, title, id, children }: SectionProps) {
  * Pairs with WsHandshakeTemplate (Phase 1) at /learn/websocket-handshake.
  */
 export default function WsFramesTemplate() {
+  const { t } = useI18n();
+
   return (
     <div className="min-h-screen bg-[#080c10] text-zinc-300">
       {/* Scanline */}
@@ -56,10 +61,10 @@ export default function WsFramesTemplate() {
               href="/learn/websocket-handshake"
               className="font-mono text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
             >
-              ← Phase 1: Handshake
+              {t('ws.prevPhaseLink')}
             </Link>
           </div>
-          <WsBadge className="mb-4">RFC 6455 · Phases 2 – 6</WsBadge>
+          <WsBadge className="mb-4">{t('ws.badgeFrames')}</WsBadge>
 
           <h1 className="mt-3 text-[clamp(1.5rem,4vw,2.2rem)] font-semibold leading-tight tracking-tight text-zinc-100">
             WebSocket{' '}
@@ -67,8 +72,7 @@ export default function WsFramesTemplate() {
           </h1>
 
           <p className="mt-3 text-[13.5px] text-zinc-500 leading-relaxed max-w-[60ch]">
-            Demo tương tác: cấu trúc frame + XOR masking, room map theo userId,
-            server push có chọn lọc, và full-duplex bidirectional messaging.
+            {t('ws.framesDesc')}
           </p>
         </header>
 
@@ -76,27 +80,27 @@ export default function WsFramesTemplate() {
         <main className="mt-8 flex flex-col gap-10">
 
           {/* Phase 2 */}
-          <Section id="frame" phase="Phase 2" label="Truyền dữ liệu" title="WebSocket Frame — cấu trúc & masking">
+          <Section id="frame" phase="Phase 2" label={t('ws.phase2Label')} title={t('ws.phase2Title')}>
             <WsFrameDemo />
           </Section>
 
           {/* Phase 3 */}
-          <Section id="room" phase="Phase 3" label="Tổ chức connection" title="client.join() — nhóm socket theo userId">
+          <Section id="room" phase="Phase 3" label={t('ws.phase3Label')} title={t('ws.phase3Title')}>
             <WsRoomDemo />
           </Section>
 
           {/* Phase 4 */}
-          <Section id="push" phase="Phase 4" label="Server push" title="server.to(room).emit() — push có chọn lọc">
+          <Section id="push" phase="Phase 4" label={t('ws.phase4Label')} title={t('ws.phase4Title')}>
             <WsPushDemo />
           </Section>
 
           {/* Phase 5 */}
-          <Section id="bidi" phase="Phase 5" label="Bidirectional" title="@SubscribeMessage — client gửi ngược lên server">
+          <Section id="bidi" phase="Phase 5" label={t('ws.phase5Label')} title={t('ws.phase5Title')}>
             <WsBidirectionalDemo />
           </Section>
 
           {/* Full cycle */}
-          <Section id="cycle" phase="Tổng kết" label="Full lifecycle" title="Toàn bộ chu trình WebSocket — 7 bước">
+          <Section id="cycle" phase={t('ws.summaryLabel')} label={t('ws.fullCycleLabel')} title={t('ws.fullCycleTitle')}>
             <WsCycleSummary />
           </Section>
 
@@ -104,16 +108,17 @@ export default function WsFramesTemplate() {
 
         <footer className="mt-14 pt-6 border-t border-white/[0.05] flex items-center justify-between">
           <span className="font-mono text-[10px] text-zinc-800">
-            RFC 6455 · Socket.IO NestJS Gateway
+            {t('ws.rfcGatewayFooter')}
           </span>
           <Link
             href="/learn/websocket-handshake"
             className="font-mono text-[10px] text-zinc-700 hover:text-zinc-500 transition-colors"
           >
-            ← Quay lại Phase 1
+            {t('ws.backToPhase1')}
           </Link>
         </footer>
       </div>
     </div>
   );
 }
+

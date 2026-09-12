@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Search, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import { api } from '@/utils/api';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function SearchSection() {
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function SearchSection() {
       setAnswer(res.answer);
     } catch (error) {
       console.error('Search failed:', error);
-      setAnswer('Sorry, something went wrong while searching.');
+      setAnswer(t('notes.aiSearchError'));
     } finally {
       setIsSearching(false);
     }
@@ -47,7 +49,7 @@ export default function SearchSection() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask AI anything about your notes..."
+          placeholder={t('notes.aiSearchPlaceholder')}
           className="flex-1 bg-transparent border-none outline-none text-foreground text-lg px-2 placeholder:text-zinc-400"
           disabled={isSearching}
         />
@@ -75,7 +77,7 @@ export default function SearchSection() {
             
             <div className="flex-1 min-w-0 pt-2">
               <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
-                AI Assistant
+                {t('notes.aiAssistant')}
                 {isSearching && (
                   <span className="flex gap-1">
                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />

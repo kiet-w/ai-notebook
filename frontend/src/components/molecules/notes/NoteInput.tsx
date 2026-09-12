@@ -6,6 +6,7 @@ import Button from '@/components/atoms/common/Button';
 import Input from '@/components/atoms/common/Input';
 import Icon from '@/components/atoms/common/Icon';
 import { Category } from '@/types/note';
+import { useI18n } from '@/hooks/useI18n';
 
 const CATEGORY_OPTIONS: { id: Category; emoji: string }[] = [
   { id: 'Cooking', emoji: '🍳' },
@@ -24,6 +25,7 @@ export interface NoteInputProps {
 }
 
 export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector }: NoteInputProps) {
+  const { t } = useI18n();
   const [content, setContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -143,7 +145,7 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector }
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          placeholder="Capture a thought... (Enter to save, Ctrl+V to paste image)"
+          placeholder={t('notes.thoughtPlaceholder')}
           rows={1}
           disabled={disabled}
         />
@@ -162,7 +164,7 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector }
                 }`}
               >
                 <span className="text-sm leading-none select-none">{emoji}</span>
-                <span>{id}</span>
+                <span>{t(`categories.${id}`)}</span>
               </button>
             ))}
           </div>
@@ -170,7 +172,7 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector }
 
         <div className="flex justify-between items-center px-4 pb-2">
           <div className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">
-            {content.length > 0 ? `${content.length} characters` : 'Notion style capture'}
+            {content.length > 0 ? t('notes.charCount', { count: content.length }) : t('notes.notionCapture')}
           </div>
           <div className="flex items-center gap-1.5">
             {mounted && onUpload && (
@@ -186,7 +188,7 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector }
                   type="button"
                   onClick={triggerFileInput}
                   disabled={disabled}
-                  title="Upload Document"
+                  title={t('notes.uploadDoc')}
                   className="p-1.5 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <Icon icon={Paperclip} size={16} />

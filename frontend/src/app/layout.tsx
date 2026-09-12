@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
+import { I18nProvider } from "@/i18n";
 
 export const metadata: Metadata = {
   title: "Secondary Brain",
@@ -13,11 +14,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="vi" className="h-full antialiased" suppressHydrationWarning>
       <body className="h-full bg-background text-foreground">
-        <QueryProvider>
-          {children}
-        </QueryProvider>
+        <I18nProvider>
+          <QueryProvider>
+            {children}
+          </QueryProvider>
+        </I18nProvider>
       </body>
     </html>
   );

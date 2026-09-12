@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/atoms/common/Button';
 import { FormField } from '@/components/molecules/auth/FormField';
 import { GoogleIcon, GithubIcon } from '@/components/atoms/auth/SocialIcons';
+import { useI18n } from '@/hooks/useI18n';
 import { api } from '@/utils/api';
 
 export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { t } = useI18n();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ export default function LoginForm() {
       router.push('/');
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(error.response?.data?.message || t('auth.loginFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -41,30 +43,32 @@ export default function LoginForm() {
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField 
+          id="email"
           name="email"
-          label="Email address" 
+          label={t('auth.emailLabel')} 
           type="email" 
-          placeholder="name@example.com"
+          placeholder={t('auth.emailPlaceholder')}
           required
         />
         <FormField 
+          id="password"
           name="password"
-          label="Password" 
+          label={t('auth.passwordLabel')} 
           type="password" 
-          placeholder="••••••••"
+          placeholder={t('auth.passwordPlaceholder')}
           required
         />
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
             <input type="checkbox" className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:checked:bg-zinc-100" />
-            Remember me
+            {t('auth.rememberMe')}
           </label>
           <a href="#" className="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100">
-            Forgot password?
+            {t('auth.forgotPassword')}
           </a>
         </div>
         <Button fullWidth variant="primary" type="submit" disabled={isLoading}>
-          {isLoading ? 'Signing in...' : 'Sign In'}
+          {isLoading ? t('auth.signingInBtn') : t('auth.signInBtn')}
         </Button>
       </form>
 
@@ -74,7 +78,7 @@ export default function LoginForm() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-white px-2 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
-            Or continue with
+            {t('auth.orContinueWith')}
           </span>
         </div>
       </div>
@@ -82,11 +86,11 @@ export default function LoginForm() {
       <div className="grid grid-cols-2 gap-4">
         <Button variant="outline" type="button" onClick={() => router.push('/')}>
           <GoogleIcon className="w-5 h-5 mr-2" />
-          Google
+          {t('auth.google')}
         </Button>
         <Button variant="outline" type="button" onClick={() => router.push('/')}>
           <GithubIcon className="w-5 h-5 mr-2 text-zinc-900 dark:text-zinc-100" />
-          GitHub
+          {t('auth.github')}
         </Button>
       </div>
     </div>

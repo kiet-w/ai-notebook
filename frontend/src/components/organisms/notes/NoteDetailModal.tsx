@@ -5,6 +5,7 @@ import { Note } from '@/types/note';
 import { X } from 'lucide-react';
 import Badge from '@/components/atoms/common/Badge';
 import { api } from '@/utils/api';
+import { useI18n } from '@/hooks/useI18n';
 
 export interface NoteDetailModalProps {
   note: Note;
@@ -70,6 +71,7 @@ function renderMarkdown(text: string) {
 }
 
 export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailModalProps) {
+  const { t } = useI18n();
   const [fetchedNote, setFetchedNote] = useState<Note | null>(null);
   const { id: noteId, content: noteContent } = note;
   
@@ -169,19 +171,19 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
         <div className="flex items-center justify-between p-6 border-b border-zinc-250/30 dark:border-zinc-850/40 bg-white/50 dark:bg-zinc-950/40 backdrop-blur-md sticky top-0 z-10">
           <div className="flex items-center gap-4 min-w-0">
             <h3 className="font-semibold text-foreground text-lg md:text-xl truncate tracking-tight">
-              {displayNote.title || 'Untitled Note'}
+              {displayNote.title || t('notes.untitledNote')}
             </h3>
             {displayNote.category && (
               <Badge 
                 icon={CATEGORY_ICONS[displayNote.category] || '📝'} 
-                text={displayNote.category} 
+                text={t(`categories.${displayNote.category}`)} 
               />
             )}
           </div>
           <button 
             className="p-1.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100 border border-transparent hover:border-zinc-250/20 dark:hover:border-zinc-800/30 cursor-pointer"
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label={t('common.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -251,7 +253,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
                     </div>
                   ) : (
                     <div>
-                      <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-2 select-none">Full Content & Analysis</p>
+                      <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-2 select-none">{t('notes.fullContentAnalysis')}</p>
                       <div className="p-6 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-zinc-800/30 space-y-2">
                         {renderMarkdown(displayNote.content)}
                       </div>
@@ -266,9 +268,9 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="text-3xl shrink-0">📄</span>
                         <div className="min-w-0">
-                          <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5 select-none">Attachment</p>
+                          <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5 select-none">{t('notes.attachment')}</p>
                           <p className="text-base font-semibold text-foreground truncate">
-                            {displayNote.url.split('/').pop() || 'Document'}
+                            {displayNote.url.split('/').pop() || t('notes.document')}
                           </p>
                         </div>
                       </div>
@@ -279,7 +281,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
                         className="px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-50 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-sm font-semibold text-white dark:text-zinc-900 shadow-sm shrink-0 cursor-pointer"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        Open File
+                        {t('notes.openFile')}
                       </a>
                     </div>
                   )}
@@ -311,7 +313,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
                     <>
                       {displayNote.summary && (
                         <div>
-                          <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-2 select-none">Summary</p>
+                          <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-2 select-none">{t('notes.summary')}</p>
                           <p className="text-base text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium">
                             {displayNote.summary}
                           </p>
@@ -320,7 +322,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
 
                       {displayNote.bullets && displayNote.bullets.length > 0 && (
                         <div>
-                          <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-3 select-none">Key Takeaways</p>
+                          <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-3 select-none">{t('notes.keyTakeaways')}</p>
                           <ul className="space-y-2.5">
                             {displayNote.bullets.map((bullet, i) => (
                               <li key={i} className="text-base text-zinc-700 dark:text-zinc-300 flex items-start gap-3">
@@ -343,9 +345,9 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-3xl shrink-0">📄</span>
                     <div className="min-w-0">
-                      <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5 select-none">Attachment</p>
+                      <p className="text-[9.5px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5 select-none">{t('notes.attachment')}</p>
                       <p className="text-base font-semibold text-foreground truncate">
-                        {displayNote.url.split('/').pop() || 'Document'}
+                        {displayNote.url.split('/').pop() || t('notes.document')}
                       </p>
                     </div>
                   </div>
@@ -356,14 +358,14 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
                     className="px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-50 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-sm font-semibold text-white dark:text-zinc-900 shadow-sm shrink-0 cursor-pointer"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    Open File
+                    {t('notes.openFile')}
                   </a>
                 </div>
               )}
 
               {displayNote.summary && (
                 <div>
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-2 select-none">Summary</p>
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-2 select-none">{t('notes.summary')}</p>
                   <p className="text-base text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium">
                     {displayNote.summary}
                   </p>
@@ -372,7 +374,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
 
               {displayNote.bullets && displayNote.bullets.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-3 select-none">Key Takeaways</p>
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest mb-3 select-none">{t('notes.keyTakeaways')}</p>
                   <ul className="space-y-2.5">
                     {displayNote.bullets.map((bullet, i) => (
                       <li key={i} className="text-base text-zinc-700 dark:text-zinc-300 flex items-start gap-3">
@@ -390,7 +392,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
         {/* Footer */}
         {displayNote.createdAt && !isNaN(new Date(displayNote.createdAt).getTime()) && (
           <div className="px-8 py-4 border-t border-zinc-250/30 dark:border-zinc-800/40 bg-zinc-50/50 dark:bg-zinc-950/20 text-xs font-semibold text-zinc-400 dark:text-zinc-505 flex items-center justify-between select-none">
-            <span>Created on</span>
+            <span>{t('notes.createdOn')}</span>
             <span>
               {new Date(displayNote.createdAt).toLocaleDateString(undefined, { 
                 weekday: 'long', 
@@ -398,7 +400,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
                 month: 'long', 
                 day: 'numeric' 
               })}
-              {' at '}
+              {` ${t('notes.at')} `}
               {new Date(displayNote.createdAt).toLocaleTimeString(undefined, { 
                 hour: '2-digit', 
                 minute: '2-digit',
@@ -421,11 +423,11 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
         >
           <div className="w-full flex items-center justify-between mb-3 shrink-0">
             <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest select-none">
-              Image Attachment
+              {t('notes.imageAttachment')}
             </span>
             <div className="flex items-center gap-3">
               <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-550 bg-zinc-100 dark:bg-zinc-900 border border-zinc-250/20 dark:border-zinc-800/30 px-2 py-0.5 rounded-full select-none">
-                {isZoomed ? 'Click to fit' : 'Click to zoom'}
+                {isZoomed ? t('notes.clickToFit') : t('notes.clickToZoom')}
               </span>
               <a 
                 href={displayNote.url}
@@ -433,7 +435,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
                 rel="noopener noreferrer"
                 className="text-[10px] font-bold text-zinc-400 hover:text-zinc-900 dark:text-zinc-550 dark:hover:text-zinc-250 uppercase tracking-widest hover:underline cursor-pointer select-none"
               >
-                Open original
+                {t('notes.openOriginal')}
               </a>
             </div>
           </div>
@@ -446,7 +448,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={displayNote.url} 
-              alt={displayNote.title || "Note attachment"} 
+              alt={displayNote.title || t('notes.attachment')} 
               className={`rounded-2xl border border-zinc-200/30 dark:border-zinc-800/30 shadow-sm transition-all duration-300 ${
                 isZoomed 
                   ? 'max-w-none max-h-none w-auto h-auto scale-100 object-none p-4' 
@@ -456,7 +458,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
             {displayNote.status === 'PROCESSING' && (
               <div className="absolute inset-0 bg-black/40 backdrop-blur-[1.5px] rounded-2xl flex flex-col items-center justify-center gap-3">
                 <div className="w-8 h-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                <span className="text-xs font-bold text-white tracking-widest uppercase select-none">AI analyzing image...</span>
+                <span className="text-xs font-bold text-white tracking-widest uppercase select-none">{t('notes.aiAnalyzingImage')}</span>
               </div>
             )}
           </div>

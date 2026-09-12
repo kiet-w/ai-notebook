@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LoginForm from '../LoginForm';
 import { api } from '@/utils/api';
+import { I18nProvider } from '@/i18n';
 
 // Mock the API module
 jest.mock('@/utils/api', () => ({
@@ -19,24 +20,42 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+const renderLoginForm = (locale: 'en' | 'vi' = 'en') => {
+  localStorage.setItem('secondary_brain_locale', locale);
+  return render(
+    <I18nProvider>
+      <LoginForm />
+    </I18nProvider>
+  );
+};
+
 describe('LoginForm', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
   });
 
-  it('renders login form with email and password fields', () => {
-    render(<LoginForm />);
+  it('renders login form with email and password fields in English', () => {
+    renderLoginForm('en');
     
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
+  it('renders login form in Vietnamese when locale is vi', () => {
+    renderLoginForm('vi');
+
+    expect(screen.getByLabelText(/địa chỉ email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/mật khẩu/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /đăng nhập/i })).toBeInTheDocument();
+  });
+
   it('shows error message on failed login', async () => {
     const mockError = { response: { data: { message: 'Invalid credentials' } } };
     (api.login as jest.Mock).mockRejectedValue(mockError);
 
-    render(<LoginForm />);
+    renderLoginForm('en');
 
     const emailInput = screen.getByLabelText(/email address/i);
     const passwordInput = screen.getByLabelText(/password/i);
@@ -54,7 +73,7 @@ describe('LoginForm', () => {
   it('calls api.login with correct credentials and redirects on success', async () => {
     (api.login as jest.Mock).mockResolvedValue({ accesToken: 'test-token' });
 
-    render(<LoginForm />);
+    renderLoginForm('en');
 
     const emailInput = screen.getByLabelText(/email address/i);
     const passwordInput = screen.getByLabelText(/password/i);
@@ -75,7 +94,7 @@ describe('LoginForm', () => {
       () => new Promise(resolve => setTimeout(() => resolve({ accesToken: 'test-token' }), 100))
     );
 
-    render(<LoginForm />);
+    renderLoginForm('en');
 
     const emailInput = screen.getByLabelText(/email address/i);
     const passwordInput = screen.getByLabelText(/password/i);
@@ -95,7 +114,7 @@ describe('LoginForm', () => {
   it('shows generic error message when API error has no message', async () => {
     (api.login as jest.Mock).mockRejectedValue({});
 
-    render(<LoginForm />);
+    renderLoginForm('en');
 
     const emailInput = screen.getByLabelText(/email address/i);
     const passwordInput = screen.getByLabelText(/password/i);

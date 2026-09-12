@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Download, Settings, Soup, Terminal, BookOpen, Briefcase, Coins, Folder, Brain, LucideIcon, LogOut } from 'lucide-react';
 import Button from '@/components/atoms/common/Button';
 import Icon from '@/components/atoms/common/Icon';
+import LanguageSwitcher from '@/components/atoms/common/LanguageSwitcher';
+import { useI18n } from '@/hooks/useI18n';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
 
@@ -15,13 +17,13 @@ export interface SidebarProps {
 }
 
 const CATEGORIES = [
-  { id: 'Cooking', name: 'Cooking' },
-  { id: 'Tech', name: 'Tech' },
-  { id: 'Learning', name: 'Learning' },
-  { id: 'Work', name: 'Work' },
-  { id: 'Finance', name: 'Finance' },
-  { id: 'Other', name: 'Other' },
-];
+  { id: 'Cooking', key: 'cooking', fallback: 'Cooking' },
+  { id: 'Tech', key: 'tech', fallback: 'Tech' },
+  { id: 'Learning', key: 'learning', fallback: 'Learning' },
+  { id: 'Work', key: 'work', fallback: 'Work' },
+  { id: 'Finance', key: 'finance', fallback: 'Finance' },
+  { id: 'Other', key: 'other', fallback: 'Other' },
+] as const;
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Cooking: Soup,
@@ -34,6 +36,8 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 
 const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unreadCounts }: SidebarProps) {
   const router = useRouter();
+  const { t } = useI18n();
+
   return (
     <aside className="w-64 shrink-0 bg-sidebar dark:bg-[#09090b]/40 border-r border-zinc-200/50 dark:border-zinc-900/45 flex flex-col h-full sticky top-0 px-4 py-6 select-none backdrop-blur-md">
       <div className="flex items-center gap-2.5 px-2.5 py-2 mb-6 rounded-xl hover:bg-zinc-200/20 dark:hover:bg-zinc-900/30 border border-transparent hover:border-zinc-200/30 dark:hover:border-zinc-900/20 cursor-pointer group">
@@ -41,8 +45,8 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
           <Icon icon={Brain} size={15} className="text-white dark:text-zinc-950 stroke-[2]" />
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="font-bold text-[13px] text-foreground truncate leading-none mb-1">Secondary Brain</span>
-          <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.18em] leading-none">Workspace</span>
+          <span className="font-bold text-[13px] text-foreground truncate leading-none mb-1">{t('sidebar.brandTitle')}</span>
+          <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.18em] leading-none">{t('sidebar.workspace')}</span>
         </div>
       </div>
 
@@ -55,20 +59,21 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2.5">
               <Icon icon={Download} className="w-4 h-4" />
-              <span>Import</span>
+              <span>{t('sidebar.importNav')}</span>
             </div>
           </div>
         </Button>
 
         <div className="mt-6 mb-2">
           <h2 className="px-3.5 font-mono text-[9px] tracking-[0.18em] uppercase text-zinc-400 dark:text-zinc-500 font-medium">
-            categories
+            {t('sidebar.categoriesTitle')}
           </h2>
         </div>
         
         {CATEGORIES.map((cat) => {
           const IconComponent = CATEGORY_ICONS[cat.id] || Folder;
           const unreadCount = unreadCounts?.[cat.id] || 0;
+          const label = t(`categories.${cat.key}`) || cat.fallback;
           return (
             <Button
               key={cat.id}
@@ -79,7 +84,7 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2.5">
                   <Icon icon={IconComponent} className="w-4 h-4" />
-                  <span>{cat.name}</span>
+                  <span>{label}</span>
                 </div>
                 {unreadCount > 0 && (
                   <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 dark:bg-emerald-500 px-1.5 text-[10px] font-bold text-white tabular-nums shadow-sm">
@@ -93,9 +98,10 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
       </nav>
 
       <div className="mt-auto space-y-3">
+        <LanguageSwitcher variant="compact" />
         <Button variant="ghost">
           <Icon icon={Settings} className="w-4 h-4" />
-          <span>Settings</span>
+          <span>{t('sidebar.settings')}</span>
         </Button>
         <div className="pt-3 border-t border-zinc-200/50 dark:border-zinc-900/50">
           <div className="flex items-center justify-between p-2 rounded-xl hover:bg-zinc-200/20 dark:hover:bg-zinc-900/30 border border-transparent hover:border-zinc-200/30 dark:hover:border-zinc-900/20 group/footer">
@@ -107,25 +113,27 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
                 </span>
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-foreground truncate leading-none mb-1">John Doe</span>
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate leading-none">john@doe.com</span>
+                <span className="text-xs font-semibold text-foreground truncate leading-none mb-1">{t('sidebar.defaultUser')}</span>
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate leading-none">{t('sidebar.defaultEmail')}</span>
               </div>
             </div>
             
-            <Link href="/auth/login" onClick={async () => {
-  try {
-    // Gọi API logout 
-    await api.logout();
-  } catch (error) {
-    // Cho dù API logout báo lỗi 401 (hết hạn token) thì vẫn bỏ qua để xóa local state
-    console.warn("Thất bại khi gọi API logout hoặc token hết hạn trước đó:", error);
-  } finally {
-    // BẮT BUỘC: Đưa người dùng về trang đăng nhập dù API thành công hay thất bại
-    router.push('/auth/login'); 
-  }
-}}
- className="flex-shrink-0 p-1.5 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-colors" title="Log out">
-              <Icon icon={LogOut}  className="w-4 h-4" />
+            <Link
+              href="/auth/login"
+              onClick={async () => {
+                try {
+                  await api.logout();
+                } catch (error) {
+                  console.warn(t('sidebar.logoutFailedWarning'), error);
+                } finally {
+                  router.push('/auth/login'); 
+                }
+              }}
+              className="flex-shrink-0 p-1.5 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-colors"
+              title={t('sidebar.logout')}
+              aria-label={t('sidebar.logout')}
+            >
+              <Icon icon={LogOut} className="w-4 h-4" />
             </Link>
           </div>
         </div>

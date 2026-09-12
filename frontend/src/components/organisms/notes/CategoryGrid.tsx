@@ -3,6 +3,7 @@
 import React, { memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Category } from '@/types/note';
+import { useI18n } from '@/hooks/useI18n';
 
 export interface CategoryGridProps {
   categoryStats?: Record<string, number>;
@@ -30,6 +31,7 @@ export const CategoryGrid = memo(function CategoryGrid({
   onSelectCategory,
 }: CategoryGridProps) {
   const router = useRouter();
+  const { t } = useI18n();
 
   const handleSelect = (category: Category) => {
     if (onSelectCategory) {
@@ -42,7 +44,7 @@ export const CategoryGrid = memo(function CategoryGrid({
   return (
     <div className="mb-10">
       <h2 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.18em] mb-4 select-none">
-        Categories
+        {t('notes.categories')}
       </h2>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
         {CATEGORIES.map(({ id: cat, icon }) => {
@@ -60,7 +62,7 @@ export const CategoryGrid = memo(function CategoryGrid({
               )}
               <span className="text-lg select-none">{icon}</span>
               <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 group-hover:text-foreground transition-colors">
-                {cat}
+                {t(`categories.${cat}`)}
               </span>
               <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-650 tabular-nums">
                 {categoryStats[cat] || 0}

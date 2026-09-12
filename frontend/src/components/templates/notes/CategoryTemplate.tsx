@@ -6,6 +6,7 @@ import { Inbox, AlertCircle } from 'lucide-react';
 import NoteCard from '@/components/organisms/notes/NoteCard';
 import Sidebar from '@/components/organisms/layout/Sidebar';
 import { useCategoryNotes } from '@/hooks/useCategoryNotes';
+import { useI18n } from '@/hooks/useI18n';
 
 const NoteDetailModal = dynamic(() => import('@/components/organisms/notes/NoteDetailModal'), {
   ssr: false,
@@ -16,6 +17,7 @@ export interface CategoryTemplateProps {
 }
 
 export default function CategoryTemplate({ category }: CategoryTemplateProps) {
+  const { t } = useI18n();
   const {
     notes,
     groupedNotes,
@@ -32,6 +34,8 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
     getCategoryIcon,
   } = useCategoryNotes(category);
 
+  const localizedCategory = t(`categories.${category}`);
+
   return (
     <div className="flex h-screen bg-background font-sans overflow-hidden">
       <Sidebar
@@ -47,11 +51,11 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
                 {getCategoryIcon()}
               </div>
               <h1 className="text-4xl font-extrabold text-foreground tracking-tight">
-                {category}
+                {localizedCategory}
               </h1>
             </div>
             <p className="text-secondary-text text-lg font-medium max-w-xl">
-              Everything tagged as {category}.
+              {t('categories.everythingTaggedAs', { category: localizedCategory })}
             </p>
           </header>
 
@@ -70,15 +74,15 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/25 text-red-50 mb-4">
                   <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">Lỗi kết nối máy chủ</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">{t('categories.errorTitle')}</h3>
                 <p className="text-secondary-text text-sm mb-6">
-                  Không thể tải danh sách ghi chú. Vui lòng thử lại.
+                  {t('categories.errorMessage')}
                 </p>
                 <button
                   onClick={() => refetch()}
                   className="px-5 py-2.5 rounded-xl bg-foreground text-background font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
                 >
-                  Thử lại ngay
+                  {t('categories.retryButton')}
                 </button>
               </div>
             ) : notes.length === 0 ? (
@@ -86,9 +90,9 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 mb-4 text-zinc-400">
                   <Inbox className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">No notes yet</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-1">{t('categories.noNotesYet')}</h3>
                 <p className="text-secondary-text max-w-xs mx-auto text-sm">
-                  You don&apos;t have any notes in the {category} category.
+                  {t('categories.noNotesDesc', { category: localizedCategory })}
                 </p>
               </div>
             ) : (

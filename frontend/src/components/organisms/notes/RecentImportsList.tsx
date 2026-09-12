@@ -4,6 +4,7 @@ import React, { memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Category } from '@/types/note';
 import { Loader2, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { useI18n } from '@/hooks/useI18n';
 
 export interface RecentImportItem {
   id: string;
@@ -42,6 +43,7 @@ export const RecentImportsList = memo(function RecentImportsList({
   onSelectNoteCategory,
 }: RecentImportsListProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const list = items || recentImports || [];
   const count = totalCount ?? totalNotesCount ?? list.length;
 
@@ -61,10 +63,10 @@ export const RecentImportsList = memo(function RecentImportsList({
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.18em] select-none">
-          Recent Imports
+          {t('notes.recentImportsTitle')}
         </h2>
         <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 tabular-nums select-none">
-          {count} total
+          {t('notes.totalCount', { count })}
         </span>
       </div>
       <div className="space-y-1.5">
@@ -81,7 +83,7 @@ export const RecentImportsList = memo(function RecentImportsList({
             </span>
             {item.category && (
               <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest shrink-0">
-                {item.category}
+                {t(`categories.${item.category}`)}
               </span>
             )}
             {item.status === 'COMPLETED' && item.category && (

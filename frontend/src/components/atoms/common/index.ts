@@ -6,3 +6,5 @@ export * from './Icon';
 export { default as Icon } from './Icon';
 export * from './Input';
 export { default as Input } from './Input';
+export * from './LanguageSwitcher';
+export { default as LanguageSwitcher } from './LanguageSwitcher';

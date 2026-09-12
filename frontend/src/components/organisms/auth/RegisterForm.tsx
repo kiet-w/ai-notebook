@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/atoms/common/Button';
 import { FormField } from '@/components/molecules/auth/FormField';
 import { GoogleIcon, GithubIcon } from '@/components/atoms/auth/SocialIcons';
+import { useI18n } from '@/hooks/useI18n';
 import { api } from '@/utils/api';
 
 export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { t } = useI18n();
 
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +32,7 @@ export default function RegisterForm() {
       router.push('/');
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Registration failed. Please try again.');
+      setError(error.response?.data?.message || t('auth.registerFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -46,36 +48,40 @@ export default function RegisterForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <FormField 
+            id="firstName"
             name="firstName"
-            label="First name" 
+            label={t('auth.firstNameLabel')} 
             type="text" 
-            placeholder="John"
+            placeholder={t('auth.firstNamePlaceholder')}
             required
           />
           <FormField 
+            id="lastName"
             name="lastName"
-            label="Last name" 
+            label={t('auth.lastNameLabel')} 
             type="text" 
-            placeholder="Doe"
+            placeholder={t('auth.lastNamePlaceholder')}
             required
           />
         </div>
         <FormField 
+          id="email"
           name="email"
-          label="Email address" 
+          label={t('auth.emailLabel')} 
           type="email" 
-          placeholder="name@example.com"
+          placeholder={t('auth.emailPlaceholder')}
           required
         />
         <FormField 
+          id="password"
           name="password"
-          label="Password" 
+          label={t('auth.passwordLabel')} 
           type="password" 
-          placeholder="••••••••"
+          placeholder={t('auth.passwordPlaceholder')}
           required
         />
         <Button fullWidth variant="primary" type="submit" disabled={isLoading}>
-          {isLoading ? 'Creating account...' : 'Create Account'}
+          {isLoading ? t('auth.creatingAccountBtn') : t('auth.createAccountBtn')}
         </Button>
       </form>
 
@@ -85,7 +91,7 @@ export default function RegisterForm() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-white px-2 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
-            Or continue with
+            {t('auth.orContinueWith')}
           </span>
         </div>
       </div>
@@ -93,11 +99,11 @@ export default function RegisterForm() {
       <div className="grid grid-cols-2 gap-4">
         <Button variant="outline" type="button" onClick={() => router.push('/')}>
           <GoogleIcon className="w-5 h-5 mr-2" />
-          Google
+          {t('auth.google')}
         </Button>
         <Button variant="outline" type="button" onClick={() => router.push('/')}>
           <GithubIcon className="w-5 h-5 mr-2 text-zinc-900 dark:text-zinc-100" />
-          GitHub
+          {t('auth.github')}
         </Button>
       </div>
     </div>
