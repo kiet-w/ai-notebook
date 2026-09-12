@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '../atoms/Button';
-import { FormField } from '../molecules/FormField';
-import { GoogleIcon, GithubIcon } from '../atoms/SocialIcons';
+import Button from '@/components/atoms/common/Button';
+import { FormField } from '@/components/molecules/auth/FormField';
+import { GoogleIcon, GithubIcon } from '@/components/atoms/auth/SocialIcons';
 import { api } from '@/utils/api';
 
 export default function LoginForm() {

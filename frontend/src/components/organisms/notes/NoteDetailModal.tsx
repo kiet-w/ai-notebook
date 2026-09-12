@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Note } from '@/types/note';
 import { X } from 'lucide-react';
-import Badge from '@/components/atoms/Badge';
+import Badge from '@/components/atoms/common/Badge';
 import { api } from '@/utils/api';
 
-interface NoteDetailModalProps {
+export interface NoteDetailModalProps {
   note: Note;
   isOpen: boolean;
   onClose: () => void;

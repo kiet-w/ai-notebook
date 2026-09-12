@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface MainTemplateProps {
+export interface MainTemplateProps {
   sidebar: React.ReactNode;
   children: React.ReactNode;
 }

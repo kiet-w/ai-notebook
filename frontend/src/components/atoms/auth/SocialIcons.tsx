@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 
 export const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>

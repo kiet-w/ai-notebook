@@ -2,9 +2,9 @@
 
 import React, { forwardRef } from 'react';
 
-type InputProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+export type InputProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-const Input = forwardRef<HTMLTextAreaElement, InputProps>(({ className = '', ...props }, ref) => {
+export const Input = forwardRef<HTMLTextAreaElement, InputProps>(({ className = '', ...props }, ref) => {
   return (
     <textarea
       ref={ref}

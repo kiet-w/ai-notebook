@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 
-interface AuthTemplateProps {
+export interface AuthTemplateProps {
   children: React.ReactNode;
   title: string;
   subtitle: string;
@@ -14,7 +14,7 @@ export default function AuthTemplate({ children, title, subtitle, type }: AuthTe
       {/* Left side - Visual (Hidden on mobile) */}
       <div className="hidden lg:flex w-1/2 flex-col justify-between bg-zinc-900 p-12 text-white relative overflow-hidden">
         {/* Subtle glow effect */}
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-zinc-800/40 via-zinc-900 to-zinc-900"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-zinc-800/40 via-zinc-900 to-zinc-900" />
         
         <div className="relative z-10 flex items-center gap-2">
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">

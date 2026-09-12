@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, Paperclip, XCircle } from 'lucide-react';
-import Button from '../atoms/Button';
-import Input from '../atoms/Input';
-import Icon from '../atoms/Icon';
+import Button from '@/components/atoms/common/Button';
+import Input from '@/components/atoms/common/Input';
+import Icon from '@/components/atoms/common/Icon';
 import { Category } from '@/types/note';
 
 const CATEGORY_OPTIONS: { id: Category; emoji: string }[] = [
@@ -16,14 +16,14 @@ const CATEGORY_OPTIONS: { id: Category; emoji: string }[] = [
   { id: 'Other', emoji: '📝' },
 ];
 
-interface NoteInputProps {
+export interface NoteInputProps {
   onSubmit: (content: string, category?: Category) => void;
   onUpload?: (file: File, category?: Category) => void;
   disabled?: boolean;
   showCategorySelector?: boolean;
 }
 
-export default function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector }: NoteInputProps) {
+export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector }: NoteInputProps) {
   const [content, setContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -205,3 +205,5 @@ export default function NoteInput({ onSubmit, onUpload, disabled, showCategorySe
     </div>
   );
 }
+
+export default NoteInput;

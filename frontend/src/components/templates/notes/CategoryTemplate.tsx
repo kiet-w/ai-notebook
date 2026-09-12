@@ -1,100 +1,41 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import dynamic from 'next/dynamic';
-
-import NoteCard from '@/components/organisms/NoteCard';
-import Sidebar from '@/components/organisms/Sidebar';
-import { api, Note } from '@/utils/api';
-import { Category } from '@/types/note';
 import { Inbox, AlertCircle } from 'lucide-react';
-import { groupNotesByDate } from '@/utils/date';
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import NoteCard from '@/components/organisms/notes/NoteCard';
+import Sidebar from '@/components/organisms/layout/Sidebar';
+import { useCategoryNotes } from '@/hooks/useCategoryNotes';
 
-const NoteDetailModal = dynamic(() => import('@/components/organisms/NoteDetailModal'), { ssr: false });
+const NoteDetailModal = dynamic(() => import('@/components/organisms/notes/NoteDetailModal'), {
+  ssr: false,
+});
 
-interface CategoryTemplateProps {
+export interface CategoryTemplateProps {
   category: string;
 }
 
 export default function CategoryTemplate({ category }: CategoryTemplateProps) {
-  const router = useRouter();
-  const [activeNoteForModal, setActiveNoteForModal] = useState<Note | null>(null);
-  const observerRef = useRef<HTMLDivElement | null>(null);
-
-  const { data: unreadCounts = {} } = useQuery({
-    queryKey: ['unreadCounts'],
-    queryFn: () => api.fetchUnreadCounts()
-  });
-
   const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
+    notes,
+    groupedNotes,
+    unreadCounts,
+    activeNoteForModal,
+    setActiveNoteForModal,
+    observerRef,
     isLoading,
     isError,
-    refetch
-  } = useInfiniteQuery({
-    queryKey: ['notes', 'category', category],
-    queryFn: ({ pageParam }) => api.fetchNotes(category as Category, 25, pageParam),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.length === 25 ? lastPage[lastPage.length - 1].id : undefined,
-  });
-
-  const notes = useMemo(() => data?.pages.flat() || [], [data]);
-
-  useEffect(() => {
-    const currentTarget = observerRef.current;
-    if (!currentTarget) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isFetchingNextPage && hasNextPage && !isLoading) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(currentTarget);
-
-    return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
-    };
-  }, [fetchNextPage, isFetchingNextPage, hasNextPage, isLoading]);
-
-  const groupedNotes = useMemo(() => {
-    return groupNotesByDate(notes);
-  }, [notes]);
-
-  const handleSelectCategory = (cat: string | null) => {
-    if (cat) {
-      router.push(`/${cat}`);
-    } else {
-      router.push('/');
-    }
-  };
-
-  const getCategoryIcon = () => {
-    switch (category) {
-      case 'Cooking': return '🍳';
-      case 'Tech': return '💻';
-      case 'Learning': return '📚';
-      case 'Work': return '💼';
-      case 'Finance': return '💰';
-      case 'Other': return '📝';
-      default: return '🧠';
-    }
-  };
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+    handleSelectCategory,
+    getCategoryIcon,
+  } = useCategoryNotes(category);
 
   return (
     <div className="flex h-screen bg-background font-sans overflow-hidden">
-      <Sidebar 
-        selectedCategory={category} 
+      <Sidebar
+        selectedCategory={category}
         onSelectCategory={handleSelectCategory}
         unreadCounts={unreadCounts}
       />
@@ -118,7 +59,10 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
             {isLoading ? (
               <>
                 {Array.from({ length: 15 }).map((_, i) => (
-                  <div key={i} className="p-4 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-sm animate-pulse h-48" />
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-sm animate-pulse h-48"
+                  />
                 ))}
               </>
             ) : isError ? (
@@ -149,8 +93,8 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
               </div>
             ) : (
               groupedNotes.flatMap((group) => [
-                <div 
-                  key={`header-${group.dateKey}`} 
+                <div
+                  key={`header-${group.dateKey}`}
                   className="col-span-full flex items-center gap-4 mt-6 first:mt-0 mb-1 select-none"
                 >
                   <span className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">
@@ -160,7 +104,7 @@ export default function CategoryTemplate({ category }: CategoryTemplateProps) {
                 </div>,
                 ...group.notes.map((note) => (
                   <NoteCard key={note.id} note={note} onOpenModal={setActiveNoteForModal} />
-                ))
+                )),
               ])
             )}
           </div>

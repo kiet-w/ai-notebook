@@ -5,11 +5,10 @@ import { useState, memo, useMemo, useRef } from 'react';
 import { Note } from '@/types/note';
 import { api } from '@/utils/api';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import Badge from '@/components/atoms/Badge';
-// import Image from 'next/image';
+import Badge from '@/components/atoms/common/Badge';
 import { getRelativeImageUrl } from '@/utils/image';
 
-interface NoteCardProps {
+export interface NoteCardProps {
   note: Note;
   onOpenModal?: (note: Note) => void;
 }
@@ -122,11 +121,11 @@ function NoteCard({ note, onOpenModal }: NoteCardProps) {
               <div className="flex items-center gap-2">
                 {parsedDate && (
                   <>
-                    <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest">
+                    <span className="text-[9px] font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-widest">
                       {parsedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
                     <span className="w-1 h-1 rounded-full bg-zinc-200 dark:bg-zinc-850" />
-                    <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-550">
+                    <span className="text-[9px] font-medium text-zinc-400 dark:text-zinc-555">
                       {parsedDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </>

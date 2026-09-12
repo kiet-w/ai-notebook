@@ -3,11 +3,12 @@
 import { memo } from 'react';
 import Link from 'next/link';
 import { Download, Settings, Soup, Terminal, BookOpen, Briefcase, Coins, Folder, Brain, LucideIcon, LogOut } from 'lucide-react';
-import Button from '../atoms/Button';
-import Icon from '../atoms/Icon';
+import Button from '@/components/atoms/common/Button';
+import Icon from '@/components/atoms/common/Icon';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
-interface SidebarProps {
+
+export interface SidebarProps {
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
   unreadCounts?: Record<string, number>;

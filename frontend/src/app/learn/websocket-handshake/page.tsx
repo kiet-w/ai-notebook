@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import WsHandshakeTemplate from '@/components/templates/WsHandshakeTemplate';
+import WsHandshakeTemplate from '@/components/templates/ws/WsHandshakeTemplate';
 
 export const metadata: Metadata = {
   title: 'WebSocket Handshake Hash — Secondary Brain',

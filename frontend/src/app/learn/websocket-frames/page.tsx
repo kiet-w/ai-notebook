@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import WsFramesTemplate from '@/components/templates/WsFramesTemplate';
+import WsFramesTemplate from '@/components/templates/ws/WsFramesTemplate';
 
 export const metadata: Metadata = {
   title: 'WebSocket Frames, Rooms & Push — Secondary Brain',

@@ -2,13 +2,13 @@
 
 import React from 'react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'nav' | 'ghost' | 'outline';
   isActive?: boolean;
   fullWidth?: boolean;
 }
 
-export default function Button({ children, variant = 'primary', isActive, fullWidth, className = '', ...props }: ButtonProps) {
+export function Button({ children, variant = 'primary', isActive, fullWidth, className = '', ...props }: ButtonProps) {
   let baseClass = '';
   
   if (variant === 'primary') {
@@ -39,3 +39,5 @@ export default function Button({ children, variant = 'primary', isActive, fullWi
     </button>
   );
 }
+
+export default Button;

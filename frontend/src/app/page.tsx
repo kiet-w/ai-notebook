@@ -1,4 +1,4 @@
-import HomeTemplate from '@/components/templates/HomeTemplate';
+import HomeTemplate from '@/components/templates/notes/HomeTemplate';
 
 export const dynamic = 'force-dynamic';
 

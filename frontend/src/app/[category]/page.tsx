@@ -1,4 +1,4 @@
-import CategoryTemplate from '@/components/templates/CategoryTemplate';
+import CategoryTemplate from '@/components/templates/notes/CategoryTemplate';
 
 export const dynamic = 'force-dynamic';
 

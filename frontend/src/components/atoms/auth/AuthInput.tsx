@@ -1,9 +1,9 @@
-import * as React from "react"
+import * as React from 'react';
 
 export type AuthInputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
-  ({ className = "", type, ...props }, ref) => {
+  ({ className = '', type, ...props }, ref) => {
     return (
       <input
         type={type}
@@ -11,7 +11,9 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
         ref={ref}
         {...props}
       />
-    )
+    );
   }
-)
-AuthInput.displayName = "AuthInput"
+);
+
+AuthInput.displayName = 'AuthInput';
+export default AuthInput;

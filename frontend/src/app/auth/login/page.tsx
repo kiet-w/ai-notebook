@@ -1,5 +1,5 @@
-import AuthTemplate from '@/components/templates/AuthTemplate';
-import LoginForm from '@/components/organisms/LoginForm';
+import AuthTemplate from '@/components/templates/auth/AuthTemplate';
+import LoginForm from '@/components/organisms/auth/LoginForm';
 
 export default function LoginPage() {
   return (
