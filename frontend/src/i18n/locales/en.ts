@@ -109,6 +109,8 @@ export const en: TranslationDictionary = {
     heroTitle: 'Your mind, organized and AI-powered.',
     heroSubtitle: 'Capture notes, extract insights, and search your thoughts instantly with advanced AI models.',
     copyright: '© {year} Secondary Brain. All rights reserved.',
+    useTestAccount: 'Quick Fill',
+    testAccountHint: 'Demo / Test Account',
   },
   notes: {
     importTitle: 'Import Context',

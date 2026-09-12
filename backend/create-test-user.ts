@@ -5,7 +5,7 @@ const prisma = new PrismaService();
 
 async function main() {
   const email = 'admin@example.com';
-  const username = 'admin' + Date.now();
+  const username = 'admin';
   const password = 'password123';
   
   const hashedPassword = await argon2.hash(password);
@@ -14,11 +14,13 @@ async function main() {
     where: { email },
     update: {
       password: hashedPassword,
+      role: 'ADMIN',
     },
     create: {
       user: username,
       email: email,
       password: hashedPassword,
+      role: 'ADMIN',
     },
   });
   

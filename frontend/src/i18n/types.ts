@@ -111,6 +111,8 @@ export interface AuthTranslations {
   heroTitle?: string;
   heroSubtitle?: string;
   copyright?: string;
+  useTestAccount?: string;
+  testAccountHint?: string;
 }
 
 export interface NotesTranslations {

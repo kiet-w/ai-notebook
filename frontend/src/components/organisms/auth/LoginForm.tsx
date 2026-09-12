@@ -9,22 +9,29 @@ import { useI18n } from '@/hooks/useI18n';
 import { api } from '@/utils/api';
 
 export default function LoginForm() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { t } = useI18n();
 
+  const handleFillTestAccount = () => {
+    setEmail('admin@example.com');
+    setPassword('password123');
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+
+    const submitEmail = email || ((new FormData(e.currentTarget)).get('email') as string);
+    const submitPassword = password || ((new FormData(e.currentTarget)).get('password') as string);
 
     try {
-      await api.login(email, password);
+      await api.login(submitEmail, submitPassword);
       router.push('/');
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -36,6 +43,25 @@ export default function LoginForm() {
 
   return (
     <div className="space-y-6">
+      {/* Demo / Test Account Card */}
+      <div className="p-3.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-between gap-3 text-xs">
+        <div className="min-w-0">
+          <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+            {t('auth.testAccountHint')}
+          </p>
+          <p className="text-zinc-500 font-mono text-[11px] truncate">
+            admin@example.com · password123
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleFillTestAccount}
+          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 transition-colors cursor-pointer shrink-0"
+        >
+          {t('auth.useTestAccount')}
+        </button>
+      </div>
+
       {error && (
         <div className="p-3 text-[13px] font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400">
           {error}
@@ -48,6 +74,8 @@ export default function LoginForm() {
           label={t('auth.emailLabel')} 
           type="email" 
           placeholder={t('auth.emailPlaceholder')}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <FormField 
@@ -56,6 +84,8 @@ export default function LoginForm() {
           label={t('auth.passwordLabel')} 
           type="password" 
           placeholder={t('auth.passwordPlaceholder')}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
         <div className="flex items-center justify-between">

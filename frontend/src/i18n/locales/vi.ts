@@ -109,6 +109,8 @@ export const vi: TranslationDictionary = {
     heroTitle: 'Tâm trí bạn, được tổ chức cùng AI.',
     heroSubtitle: 'Ghi lại ghi chú, trích xuất thông tin chi tiết và tìm kiếm suy nghĩ tức thì bằng các mô hình AI tiên tiến.',
     copyright: '© {year} Secondary Brain. Bảo lưu mọi quyền.',
+    useTestAccount: 'Điền nhanh',
+    testAccountHint: 'Tài khoản thử nghiệm',
   },
   notes: {
     importTitle: 'Nhập nội dung',
