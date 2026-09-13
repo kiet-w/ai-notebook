@@ -20,6 +20,7 @@ import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { NoteResponseDto } from './dto/note-response.dto';
 import { FindAllNotesQueryDto } from './dto/find-all-notes-query.dto';
+import { SearchNotesDto } from './dto/search-notes.dto';
 import { Note, Category } from '@prisma/client';
 import { extractBullets } from './utils/note.utils';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -36,7 +37,7 @@ export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
   @Post()
-  @HttpCode(HttpStatus.ACCEPTED)
+  @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createNoteDto: CreateNoteDto,
     @Req() req: AuthRequest,
@@ -46,7 +47,7 @@ export class NotesController {
   }
 
   @Post('upload')
-  @HttpCode(HttpStatus.ACCEPTED)
+  @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @UploadedFile(
@@ -63,7 +64,6 @@ export class NotesController {
     )
     file: Express.Multer.File,
     @Body('category') category: Category | undefined,
-    @Body('detailLevel') detailLevel: 'short' | 'medium' | 'long' | undefined,
     @Req() req: AuthRequest,
   ): Promise<NoteResponseDto> {
     if (!file) throw new BadRequestException('No file uploaded');
@@ -71,7 +71,6 @@ export class NotesController {
       file,
       req.user.id,
       category,
-      detailLevel,
     );
     return this.toResponseDto(note);
   }
@@ -100,12 +99,14 @@ export class NotesController {
   @Post('search')
   @HttpCode(HttpStatus.OK)
   async search(
-    @Body('query') query: string,
+    @Body() searchNotesDto: SearchNotesDto,
     @Req() req: AuthRequest,
-  ): Promise<{ answer: string }> {
-    if (!query) return { answer: 'Please provide a query.' };
-    const answer = await this.notesService.search(query, req.user.id);
-    return { answer };
+  ): Promise<{ notes: NoteResponseDto[] }> {
+    const notes = await this.notesService.search(
+      searchNotesDto.query,
+      req.user.id,
+    );
+    return { notes: notes.map((note) => this.toResponseDto(note)) };
   }
 
   @Get(':id')
@@ -140,6 +141,7 @@ export class NotesController {
       id: note.id,
       url,
       userInput: note.userInput,
+      title: note.aiTitle,
       aiTitle: note.aiTitle,
       aiSummary: note.aiSummary,
       aiBullets: extractBullets(note.aiBullets),

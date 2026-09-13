@@ -5,6 +5,7 @@ import NoteInput from '../NoteInput';
 jest.mock('@/hooks/useI18n', () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, string | number>) => {
+      if (key === 'notes.titlePlaceholder') return 'Note title (optional)...';
       if (key === 'notes.thoughtPlaceholder') return 'Capture your thought...';
       if (key === 'notes.notionCapture') return 'Notion style capture';
       if (key === 'notes.charCount') return `${params?.count} chars`;
@@ -65,5 +66,24 @@ describe('NoteInput component', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
 
     expect(mockSubmit).toHaveBeenCalledWith('My test note', 'Tech');
+  });
+
+  it('allows entering a title and submitting with title and content', () => {
+    const mockSubmit = jest.fn();
+    render(<NoteInput onSubmit={mockSubmit} />);
+
+    const titleInput = screen.getByPlaceholderText(/Note title/i);
+    const textarea = screen.getByPlaceholderText('Capture your thought...');
+
+    fireEvent.change(titleInput, { target: { value: 'Important Meeting' } });
+    fireEvent.change(textarea, { target: { value: 'Discussion on roadmap' } });
+
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
+
+    expect(mockSubmit).toHaveBeenCalledWith(
+      'Discussion on roadmap',
+      undefined,
+      'Important Meeting'
+    );
   });
 });

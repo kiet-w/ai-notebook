@@ -14,16 +14,21 @@ export class NotesRepository extends BaseRepository<
   }
 
   async create(data: {
+    title?: string;
+    content?: string;
     url?: string;
     userInput?: string;
     category?: Category;
+    status?: Status;
     userId: string;
   }): Promise<Note> {
     return super.create({
       url: data.url,
       userInput: data.userInput,
-      category: data.category,
-      status: Status.PROCESSING,
+      content: data.content ?? data.userInput,
+      aiTitle: data.title,
+      category: data.category ?? Category.OTHER,
+      status: data.status ?? Status.COMPLETED,
       user: { connect: { id: data.userId } },
     });
   }
@@ -48,6 +53,8 @@ export class NotesRepository extends BaseRepository<
       queryParams.select = {
         id: true,
         url: true,
+        userInput: true,
+        content: true,
         aiTitle: true,
         aiSummary: true,
         category: true,
@@ -80,5 +87,22 @@ export class NotesRepository extends BaseRepository<
 
   async updateStatus(id: string, status: Status): Promise<Note> {
     return super.update(id, { status });
+  }
+
+  async search(userId: string, query: string, limit = 20): Promise<Note[]> {
+    const trimmed = query.trim();
+    if (!trimmed) return [];
+    return this.prisma.note.findMany({
+      where: {
+        userId,
+        OR: [
+          { aiTitle: { contains: trimmed, mode: 'insensitive' } },
+          { content: { contains: trimmed, mode: 'insensitive' } },
+          { userInput: { contains: trimmed, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
   }
 }

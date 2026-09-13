@@ -1,21 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Sparkles, Loader2, ArrowRight } from 'lucide-react';
-import { api } from '@/utils/api';
+import { Search, Loader2, ArrowRight, FileText, ChevronRight } from 'lucide-react';
+import { api, Note } from '@/utils/api';
 import { useI18n } from '@/hooks/useI18n';
+import { useRouter } from 'next/navigation';
+import Badge from '@/components/atoms/common/Badge';
+import { getCategoryLabel } from '@/utils/category';
 
 export default function SearchSection() {
   const { t } = useI18n();
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [answer, setAnswer] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [results, setResults] = useState<Note[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setMounted(true);
     }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -23,23 +30,31 @@ export default function SearchSection() {
     if (!query.trim()) return;
 
     setIsSearching(true);
-    setAnswer(null);
+    setErrorMessage(null);
+    setHasSearched(true);
 
     try {
-      const res = await api.searchNotes(query);
-      setAnswer(res.answer);
+      const res = await api.searchNotes(query.trim());
+      setResults(res.notes || []);
     } catch (error) {
       console.error('Search failed:', error);
-      setAnswer(t('notes.aiSearchError'));
+      setErrorMessage(t('notes.aiSearchError') || 'Có lỗi xảy ra khi tìm kiếm');
+      setResults([]);
     } finally {
       setIsSearching(false);
     }
   };
 
+  const handleSelectNote = (note: Note) => {
+    if (note.category) {
+      router.push(`/${note.category}`);
+    }
+  };
+
   return (
     <div className="mb-12 w-full max-w-3xl mx-auto">
-      <form 
-        onSubmit={handleSearch} 
+      <form
+        onSubmit={handleSearch}
         className="relative group flex items-center bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 shadow-sm transition-all hover:shadow-md hover:bg-white/80 dark:hover:bg-zinc-900/80"
       >
         <div className="pl-4 pr-2 text-zinc-400">
@@ -57,49 +72,71 @@ export default function SearchSection() {
           type="submit"
           suppressHydrationWarning
           disabled={!mounted || !query.trim() || isSearching}
-          className="bg-foreground text-background p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex items-center justify-center"
+          className="bg-foreground text-background p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer"
         >
-          {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+          {isSearching ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <ArrowRight className="w-5 h-5" />
+          )}
         </button>
       </form>
 
-      {/* AI Answer Section */}
-      {(isSearching || answer) && (
-        <div className="mt-6 p-6 rounded-2xl border border-blue-200/50 dark:border-blue-900/30 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-xl shadow-lg relative overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Sparkles className="w-24 h-24" />
+      {/* Results Section */}
+      {hasSearched && (
+        <div className="mt-6 p-5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/60">
+            <h4 className="text-sm font-semibold text-foreground">
+              Kết quả tìm kiếm ({results.length})
+            </h4>
+            {isSearching && <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />}
           </div>
-          
-          <div className="flex gap-4 items-start relative z-10">
-            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center shrink-0 shadow-sm">
-              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+
+          {errorMessage && (
+            <p className="py-4 text-sm text-red-500 text-center">{errorMessage}</p>
+          )}
+
+          {!isSearching && results.length === 0 && !errorMessage && (
+            <div className="py-8 text-center text-zinc-500 dark:text-zinc-400 text-sm">
+              Không tìm thấy ghi chú nào phù hợp với &ldquo;{query}&rdquo;.
             </div>
-            
-            <div className="flex-1 min-w-0 pt-2">
-              <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300 mb-2 flex items-center gap-2">
-                {t('notes.aiAssistant')}
-                {isSearching && (
-                  <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </span>
-                )}
-              </h4>
-              
-              {isSearching ? (
-                <div className="space-y-2 mt-3">
-                  <div className="h-4 bg-blue-100 dark:bg-blue-900/40 rounded w-full animate-pulse" />
-                  <div className="h-4 bg-blue-100 dark:bg-blue-900/40 rounded w-5/6 animate-pulse" />
-                  <div className="h-4 bg-blue-100 dark:bg-blue-900/40 rounded w-4/6 animate-pulse" />
+          )}
+
+          {results.length > 0 && (
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800/50 mt-1 max-h-96 overflow-y-auto">
+              {results.map((note) => (
+                <div
+                  key={note.id}
+                  onClick={() => handleSelectNote(note)}
+                  className="py-3 px-2 flex items-start justify-between gap-4 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 rounded-xl transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 shrink-0 mt-0.5">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h5 className="text-sm font-semibold text-foreground truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {note.title || t('notes.untitledNote')}
+                      </h5>
+                      {note.content && (
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mt-0.5">
+                          {note.content}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                    {note.category && (
+                      <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                        {getCategoryLabel(note.category, t)}
+                      </Badge>
+                    )}
+                    <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
                 </div>
-              ) : (
-                <div className="text-foreground leading-relaxed text-[15px] whitespace-pre-wrap">
-                  {answer}
-                </div>
-              )}
+              ))}
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

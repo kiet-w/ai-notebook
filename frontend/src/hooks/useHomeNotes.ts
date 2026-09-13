@@ -61,14 +61,16 @@ export function useHomeNotes() {
   }, [pendingNote, router]);
 
   const handleCapture = useCallback(
-    async (content: string, category?: Category) => {
+    async (content: string, category?: Category, title?: string) => {
       try {
-        const realNote = await api.createNote(content, category);
+        const realNote = await api.createNote(content, category, title);
         setPendingNoteId(realNote.id);
 
         queryClient.setQueryData<Note[]>(['notes', 'recent'], (old = []) => {
-          return [realNote, ...old].slice(0, 25);
+          return [realNote, ...old.filter((n) => n.id !== realNote.id)].slice(0, 25);
         });
+        await queryClient.invalidateQueries({ queryKey: ['unreadCounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['notes'] });
       } catch (error) {
         console.error('Failed to capture note:', error);
       }
@@ -93,8 +95,10 @@ export function useHomeNotes() {
         setPendingNoteId(realNote.id);
 
         queryClient.setQueryData<Note[]>(['notes', 'recent'], (old = []) => {
-          return [realNote, ...old].slice(0, 25);
+          return [realNote, ...old.filter((n) => n.id !== realNote.id)].slice(0, 25);
         });
+        await queryClient.invalidateQueries({ queryKey: ['unreadCounts'] });
+        await queryClient.invalidateQueries({ queryKey: ['notes'] });
       } catch (error) {
         console.error('Failed to upload file:', error);
       }

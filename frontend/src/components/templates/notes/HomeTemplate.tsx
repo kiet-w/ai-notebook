@@ -3,7 +3,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import NoteInput from '@/components/molecules/notes/NoteInput';
-import AnalyzingToast from '@/components/molecules/notes/AnalyzingToast';
 import { useHomeNotes } from '@/hooks/useHomeNotes';
 import { ImportHero, RecentImportsList } from '@/components/organisms/notes';
 
@@ -14,7 +13,6 @@ export default function HomeTemplate() {
     unreadCounts,
     recentImports,
     availableCategories,
-    isAnalyzing,
     totalNotesCount,
     handleCapture,
     handleUpload,
@@ -49,8 +47,6 @@ export default function HomeTemplate() {
           />
         </div>
       </main>
-
-      <AnalyzingToast isAnalyzing={isAnalyzing} />
     </div>
   );
 }

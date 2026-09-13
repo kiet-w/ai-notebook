@@ -74,6 +74,7 @@ interface ApiNote {
   url: string | null;
   userInput: string | null;
   content: string | null;
+  title?: string | null;
   aiTitle: string | null;
   aiSummary: string | null;
   aiBullets: string[] | null;
@@ -95,7 +96,7 @@ export function normalizeNote(note: ApiNote): Note {
     id: note.id,
     content: note.content ?? note.userInput ?? note.url ?? '',
     url: note.url ?? undefined,
-    title: note.aiTitle ?? undefined,
+    title: note.title ?? note.aiTitle ?? undefined,
     category: note.category ? normalizeCategoryName(note.category) : undefined,
     summary: note.aiSummary ?? undefined,
     bullets: note.aiBullets ?? undefined,
@@ -132,10 +133,12 @@ export const api = {
     return normalizedCounts;
   },
 
-  async createNote(content: string, category?: string): Promise<Note> {
+  async createNote(content: string, category?: string, title?: string): Promise<Note> {
     const apiCategory = toApiCategory(category);
     const res = await apiInstance.post('/notes', { 
-      userInput: content, 
+      userInput: content,
+      content,
+      title: title?.trim() || undefined,
       category: apiCategory 
     });
     return normalizeNote(res.data as ApiNote);
@@ -161,12 +164,11 @@ export const api = {
     return normalizeNote(res.data as ApiNote);
   },
 
-  async searchNotes(query: string): Promise<{ answer: string; relatedNotes?: Note[] }> {
+  async searchNotes(query: string): Promise<{ notes: Note[] }> {
     const res = await apiInstance.post('/notes/search', { query });
-    const data = res.data;
+    const rawNotes = (res.data?.notes || []) as ApiNote[];
     return {
-      answer: data.answer,
-      relatedNotes: data.relatedNotes ? data.relatedNotes.map(normalizeNote) : undefined,
+      notes: rawNotes.map(normalizeNote),
     };
   },
 

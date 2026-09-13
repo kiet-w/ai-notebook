@@ -1,12 +1,16 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotesController } from './notes.controller';
 import { NotesService } from './notes.service';
-import { MessageEvent } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 describe('NotesController', () => {
   let controller: NotesController;
   let service: NotesService;
+
+  const mockAuthReq = {
+    user: { id: 'test-user-id', role: 'user' },
+  } as unknown as Parameters<typeof controller.create>[1];
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -20,6 +24,7 @@ describe('NotesController', () => {
             findAll: jest.fn(),
             findOne: jest.fn(),
             createFromFile: jest.fn(),
+            search: jest.fn(),
           },
         },
         {
@@ -39,8 +44,69 @@ describe('NotesController', () => {
     expect(controller).toBeDefined();
   });
 
+  describe('create', () => {
+    it('should create a note directly and return NoteResponseDto with COMPLETED status', async () => {
+      const mockNote = {
+        id: '123',
+        url: null,
+        userInput: 'Hello',
+        aiTitle: 'Hello',
+        aiSummary: null,
+        aiBullets: null,
+        content: 'Hello',
+        category: 'OTHER' as const,
+        status: 'COMPLETED' as const,
+        isRead: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      (service.create as jest.Mock).mockResolvedValue(mockNote);
+
+      const result = await controller.create({ content: 'Hello' }, mockAuthReq);
+
+      expect(jest.mocked(service.create)).toHaveBeenCalledWith(
+        { content: 'Hello' },
+        'test-user-id',
+      );
+      expect(result.id).toBe('123');
+      expect(result.title).toBe('Hello');
+      expect(result.status).toBe('COMPLETED');
+    });
+  });
+
+  describe('search', () => {
+    it('should search notes and return matching notes array', async () => {
+      const mockNote = {
+        id: '123',
+        url: null,
+        userInput: 'Note with query',
+        aiTitle: 'Note with query',
+        aiSummary: null,
+        aiBullets: null,
+        content: 'Note with query',
+        category: 'OTHER' as const,
+        status: 'COMPLETED' as const,
+        isRead: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      (service.search as jest.Mock).mockResolvedValue([mockNote]);
+
+      const result = await controller.search({ query: 'query' }, mockAuthReq);
+
+      expect(jest.mocked(service.search)).toHaveBeenCalledWith(
+        'query',
+        'test-user-id',
+      );
+      expect(result.notes).toHaveLength(1);
+      expect(result.notes[0].id).toBe('123');
+    });
+  });
+
   describe('uploadFile', () => {
-    it('should upload a file and return the processing note', async () => {
+    it('should upload a file and return the completed note', async () => {
       const mockFile = {
         fieldname: 'file',
         originalname: 'test.pdf',
@@ -52,13 +118,15 @@ describe('NotesController', () => {
 
       const mockNote = {
         id: '123',
-        url: null,
-        userInput: 'Processing file: test.pdf',
-        aiTitle: null,
+        url: '/uploads/test.pdf',
+        userInput: 'test.pdf',
+        aiTitle: 'test.pdf',
         aiSummary: null,
         aiBullets: null,
-        category: 'OTHER',
-        status: 'PROCESSING',
+        content: 'Tập tin đính kèm: test.pdf',
+        category: 'OTHER' as const,
+        status: 'COMPLETED' as const,
+        isRead: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -68,34 +136,24 @@ describe('NotesController', () => {
       const result = await controller.uploadFile(
         mockFile,
         undefined,
-        undefined,
-        {
-          user: { id: 'test-user-id', role: 'user' },
-        } as unknown as Parameters<typeof controller.uploadFile>[3],
+        mockAuthReq,
       );
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(service.createFromFile).toHaveBeenCalledWith(
+      expect(jest.mocked(service.createFromFile)).toHaveBeenCalledWith(
         mockFile,
         'test-user-id',
         undefined,
-        undefined,
       );
       expect(result.id).toBe('123');
-      expect(result.userInput).toBe('Processing file: test.pdf');
+      expect(result.status).toBe('COMPLETED');
     });
 
     it('should throw BadRequestException if no file is uploaded', async () => {
       await expect(
         controller.uploadFile(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          null as any,
+          undefined as unknown as Express.Multer.File,
           undefined,
-          undefined,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          {
-            user: { id: 'test-user-id', role: 'user' },
-          } as any,
+          mockAuthReq,
         ),
       ).rejects.toThrow('No file uploaded');
     });

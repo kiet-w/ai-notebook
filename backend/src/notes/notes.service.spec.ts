@@ -1,18 +1,13 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotesService } from './notes.service';
 import { NotesRepository } from './repositories/notes.repository';
-import { ScraperService } from '../scraper/scraper.service';
-import { AiService } from '../ai/ai.service';
 import { Category, Status } from '@prisma/client';
-import { NoteUpdatedEvent } from './types/sse-event.type';
-
-import { MarkitdownService } from '../parser/markitdown.service';
+import { BadRequestException } from '@nestjs/common';
 
 describe('NotesService', () => {
   let service: NotesService;
   let repository: NotesRepository;
-  let scraperService: ScraperService;
-  let aiService: AiService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,25 +21,8 @@ describe('NotesService', () => {
             updateStatus: jest.fn(),
             findById: jest.fn(),
             findAll: jest.fn(),
-          },
-        },
-        {
-          provide: ScraperService,
-          useValue: {
-            scrape: jest.fn(),
-          },
-        },
-        {
-          provide: AiService,
-          useValue: {
-            analyze: jest.fn(),
-            analyzeImage: jest.fn(),
-          },
-        },
-        {
-          provide: MarkitdownService,
-          useValue: {
-            convert: jest.fn(),
+            search: jest.fn(),
+            getUnreadCounts: jest.fn(),
           },
         },
       ],
@@ -52,118 +30,110 @@ describe('NotesService', () => {
 
     service = module.get<NotesService>(NotesService);
     repository = module.get<NotesRepository>(NotesRepository);
-    scraperService = module.get<ScraperService>(ScraperService);
-    aiService = module.get<AiService>(AiService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('processNote', () => {
-    it('should emit note-updated when processing completes', (done) => {
-      const noteId = 'test-id';
-      const url = 'http://example.com';
-      const mockScrapeResult = { title: 'Title', content: 'Content' };
-      const mockAiResult = {
-        title: 'AI Title',
-        summary: 'Summary',
-        bullets: ['One', 'Two'],
-        category: Category.LEARNING,
-      };
-      const mockUpdatedNote = {
-        id: noteId,
-        url,
-        userInput: null,
-        aiTitle: 'Title',
-        aiSummary: mockAiResult.summary,
-        aiBullets: mockAiResult.bullets,
-        content: mockScrapeResult.content,
-        category: Category.LEARNING,
-        status: Status.COMPLETED,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      (scraperService.scrape as jest.Mock).mockResolvedValue(mockScrapeResult);
-      (aiService.analyze as jest.Mock).mockResolvedValue(mockAiResult);
-      (repository.update as jest.Mock).mockResolvedValue(mockUpdatedNote);
-
-      const events: NoteUpdatedEvent[] = [];
-      service.getEventStream().subscribe({
-        next: (event) => {
-          events.push(event);
-          expect(event).toEqual({
-            id: noteId,
-            status: Status.COMPLETED,
-            aiTitle: 'Title',
-            category: Category.LEARNING,
-            aiSummary: 'Summary',
-            aiBullets: ['One', 'Two'],
-            content: 'Content',
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            createdAt: expect.any(Date),
-          });
-          done();
-        },
-      });
-
-      (repository.create as jest.Mock).mockResolvedValue({
-        id: noteId,
-        url,
-        userInput: null,
-        status: Status.PROCESSING,
-      });
-      void service.create({ url }, 'test-user-id');
+  describe('create', () => {
+    it('should throw BadRequestException if no content, userInput or url provided', async () => {
+      await expect(service.create({}, 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
-    it('should emit note-updated when processing fails', (done) => {
-      const noteId = 'test-id';
-      const url = 'http://example.com';
-      const errorMessage = 'Scrape failed';
-      const failedNote = {
-        id: noteId,
-        url,
-        userInput: null,
-        aiTitle: null,
+    it('should create note with extracted title and status COMPLETED', async () => {
+      const mockCreatedNote = {
+        id: 'note-1',
+        url: null,
+        userInput: 'My first note\nMore details',
+        content: 'My first note\nMore details',
+        aiTitle: 'My first note',
         aiSummary: null,
         aiBullets: null,
-        content: null,
         category: Category.OTHER,
-        status: Status.FAILED,
+        status: Status.COMPLETED,
+        isRead: false,
+        userId: 'user-1',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      (scraperService.scrape as jest.Mock).mockRejectedValue(
-        new Error(errorMessage),
+      (repository.create as jest.Mock).mockResolvedValue(mockCreatedNote);
+
+      const result = await service.create(
+        { content: 'My first note\nMore details' },
+        'user-1',
       );
-      (repository.updateStatus as jest.Mock).mockResolvedValue(failedNote);
 
-      service.getEventStream().subscribe({
-        next: (event) => {
-          expect(event).toEqual({
-            id: noteId,
-            status: Status.FAILED,
-            aiTitle: null,
-            category: Category.OTHER,
-            aiSummary: null,
-            aiBullets: null,
-            content: null,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            createdAt: expect.any(Date),
-          });
-          done();
+      expect(jest.mocked(repository.create)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'My first note',
+          content: 'My first note\nMore details',
+          status: Status.COMPLETED,
+          userId: 'user-1',
+        }),
+      );
+      expect(result).toEqual(mockCreatedNote);
+    });
+
+    it('should use explicitly provided title when available', async () => {
+      const mockCreatedNote = {
+        id: 'note-2',
+        url: null,
+        userInput: 'Details here',
+        content: 'Details here',
+        aiTitle: 'Custom Title',
+        aiSummary: null,
+        aiBullets: null,
+        category: Category.TECH,
+        status: Status.COMPLETED,
+        isRead: false,
+        userId: 'user-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      (repository.create as jest.Mock).mockResolvedValue(mockCreatedNote);
+
+      const result = await service.create(
+        {
+          title: 'Custom Title',
+          userInput: 'Details here',
+          category: Category.TECH,
         },
-      });
+        'user-1',
+      );
 
-      (repository.create as jest.Mock).mockResolvedValue({
-        id: noteId,
-        url,
-        userInput: null,
-        status: Status.PROCESSING,
-      });
-      void service.create({ url }, 'test-user-id');
+      expect(jest.mocked(repository.create)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Custom Title',
+          category: Category.TECH,
+          status: Status.COMPLETED,
+        }),
+      );
+      expect(result.aiTitle).toEqual('Custom Title');
+    });
+  });
+
+  describe('search', () => {
+    it('should call repository.search with userId and query', async () => {
+      const mockNotes = [
+        {
+          id: 'note-1',
+          content: 'test content',
+          aiTitle: 'test title',
+        },
+      ];
+      (repository.search as jest.Mock).mockResolvedValue(mockNotes);
+
+      const result = await service.search('keyword', 'user-1');
+      expect(jest.mocked(repository.search)).toHaveBeenCalledWith(
+        'user-1',
+        'keyword',
+      );
+      expect(result).toEqual(mockNotes);
     });
   });
 });

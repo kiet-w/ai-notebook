@@ -13,7 +13,7 @@ import NoteFilePreview from './NoteFilePreview';
 import NoteCategoryPicker from './NoteCategoryPicker';
 
 export interface NoteInputProps {
-  onSubmit: (content: string, category?: Category) => void;
+  onSubmit: (content: string, category?: Category, title?: string) => void;
   onUpload?: (file: File, category?: Category) => void;
   disabled?: boolean;
   showCategorySelector?: boolean;
@@ -23,6 +23,7 @@ export interface NoteInputProps {
 export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, categories }: NoteInputProps) {
   const { t } = useI18n();
   const { customCategories } = useCustomCategories();
+  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -64,16 +65,19 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (disabled || (!content.trim() && !selectedFile)) return;
+    if (disabled || (!content.trim() && !selectedFile && !title.trim())) return;
 
     if (selectedFile && onUpload) {
       onUpload(selectedFile, selectedCategory);
       setSelectedFile(null);
+    } else if (title.trim()) {
+      onSubmit(content, selectedCategory, title.trim());
     } else {
       onSubmit(content, selectedCategory);
     }
 
     setContent('');
+    setTitle('');
     setSelectedCategory(undefined);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -118,6 +122,14 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
             onRemove={() => setSelectedFile(null)}
           />
         )}
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={t('notes.titlePlaceholder') || 'Tiêu đề ghi chú (tuỳ chọn)...'}
+          disabled={disabled}
+          className="w-full px-4 pt-2.5 pb-1 text-base font-semibold text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 bg-transparent border-none outline-none focus:outline-none"
+        />
         <Input
           ref={textareaRef}
           value={content}
@@ -163,7 +175,7 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
             )}
             <Button
               type="submit"
-              disabled={disabled || (!content.trim() && !selectedFile)}
+              disabled={disabled || (!content.trim() && !selectedFile && !title.trim())}
             >
               <Icon icon={Send} size={16} />
             </Button>
