@@ -7,79 +7,98 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-FFC131?style=flat-square&logo=tauri)](https://tauri.app/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-v11-orange?style=flat-square&logo=pnpm)](https://pnpm.io/)
 
-**AI Notebook** là ứng dụng ghi chú thông minh thế hệ mới, kết hợp sức mạnh của Generative AI (Google Gemini & OpenRouter LLMs) với kiến trúc Full-Stack hiện đại. Ứng dụng hỗ trợ tự động phân tích ghi chú, phân loại danh mục, trích xuất cấu trúc (5W1H, nguyên liệu & bước nấu ăn,...), hỗ trợ tệp đa phương tiện (hình ảnh, âm thanh), đồng bộ thời gian thực qua WebSocket, đa ngôn ngữ (Tiếng Việt & Tiếng Anh), cùng khả năng đóng gói ứng dụng Desktop (Tauri).
+**AI Notebook** là ứng dụng ghi chú cá nhân hiện đại, tốc độ cao với phong cách thiết kế tối giản (Minimalist). Ứng dụng hỗ trợ quản lý ghi chú thông minh, tạo danh mục động, tìm kiếm từ khóa thời gian thực, đính kèm tệp đa định dạng, dán ảnh trực tiếp từ clipboard, hỗ trợ đa ngôn ngữ (Tiếng Việt & Tiếng Anh), xác thực an toàn nhiều lớp và đóng gói ứng dụng Desktop đa nền tảng với **Tauri v2**.
 
 ---
 
 ## 🌟 Tính Năng Nổi Bật (Key Features)
 
-### 🤖 AI-Powered Intelligence
-- **Tự động phân loại & định dạng thông minh:** AI tự động nhận diện danh mục ghi chú (`TECH`, `COOKING`, `STUDY`, `WORK`, `LIFE`,...) và cấu trúc hoá nội dung phù hợp (ví dụ: TECH theo 5W1H, COOKING theo Ingredients & Steps).
-- **Tuỳ chỉnh độ sâu phân tích (Detail Level):** Lựa chọn độ dài và chi tiết của nội dung phân tích: `SHORT`, `MEDIUM`, hoặc `LONG`.
-- **Đa mô hình AI (Multi-Model AI Engine):**
-  - Hỗ trợ **Google Gemini** (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`).
-  - Hỗ trợ **OpenRouter** (`nemotron-3-ultra-550b-a55b:free`, `deepseek`,...).
-  - Cơ chế tự động fallback khi gặp sự cố quota / rate limit.
-- **Xử lý song song (`analyzeFast`):** Tối ưu thời gian phản hồi bằng việc xử lý trích xuất metadata và tạo nội dung Markdown song song.
-- **Xử lý đa phương tiện:** Hỗ trợ nhận diện hình ảnh và tóm tắt nội dung từ liên kết web (Web Scraping).
+### ⚡ Ghi Chú Tốc Độ Cao & Trực Quan (Instant Note Capture)
+- **Lưu ghi chú trực tiếp:** Nhập và lưu ý tưởng tức thì mà không bị trễ thời gian xử lý.
+- **Tiêu đề riêng biệt & Phím tắt:** Ô nhập tiêu đề rõ ràng với đường phân cách thanh lịch, hỗ trợ phím tắt điều hướng `Enter` / `Shift+Enter` mượt mà.
+- **Xem trước & Chỉnh sửa chi tiết:** Hỗ trợ xem nhanh ghi chú dạng popup / modal và cập nhật nội dung dễ dàng.
 
-### 💻 Frontend & Trải Nghiệm Người Dùng (UI/UX)
-- **Atomic Design Architecture:** Cấu trúc thành phần UI chuẩn mực theo phân cấp `atoms`, `molecules`, `organisms`, `templates`.
-- **Đa ngôn ngữ toàn diện (i18n):** Chuyển đổi ngôn ngữ Tiếng Việt (vi) và Tiếng Anh (en) mượt mà không cần reload trang.
-- **Giao diện hiện đại & Tối ưu hiệu năng:**
-  - Thiết kế Dark/Light mode tinh tế với Tailwind CSS v4.
-  - Tối ưu bộ nhớ đối với tệp đính kèm và preview ảnh.
-  - Hiển thị tương tác dạng lưới thẻ thông minh với chi tiết xem nhanh.
-- **Thời gian thực (Real-time):** Tích hợp Socket.IO client cập nhật trạng thái ghi chú tức thì.
+### 🏷️ Quản Lý Danh Mục Linh Hoạt (Dynamic Categories)
+- **Horizontal Category Picker (`NoteCategoryPicker`):** Bộ chọn danh mục dạng Popover hiện đại, chọn nhanh hoặc hủy chọn chỉ với 1 click.
+- **Tạo danh mục tùy chỉnh mọi lúc mọi nơi:** Cho phép người dùng tự tạo danh mục mới ngay trên **Sidebar** hoặc ngay tại khung nhập ghi chú (**NoteInput**).
+- **Phân loại ghi chú thông minh:** Lọc nhanh danh sách ghi chú theo từng danh mục riêng biệt.
 
-### 🛡️ Backend & Bảo Mật (Backend & Security)
-- **NestJS Architecture:** Cấu trúc module rõ ràng (`ai`, `notes`, `user`, `parser`, `scraper`, `prisma`).
-- **Xác thực & Uỷ quyền an toàn:** JWT Token lưu trong HttpOnly Cookie và Authorization Bearer Header, mã hoá mật khẩu với thuật toán an toàn Argon2.
-- **Strict Data Validation:** Tất cả DTOs đều được kiểm tra chặt chẽ với `class-validator` và `class-transformer`.
-- **Bảo mật nhiều lớp:** Rate Limiting (Throttler), CORS an toàn, Content Security Policy (CSP), và Security Headers.
-- **Structured Logging:** Ghi log định dạng chuẩn bằng Pino Logger.
+### 📎 Đa Phương Tiện & Tệp Đính Kèm (Rich Attachments)
+- **Dán ảnh siêu tốc từ Clipboard (`Ctrl + V`):** Tự động nhận diện ảnh chụp màn hình hoặc ảnh copy và hiển thị xem trước trước khi tạo ghi chú.
+- **Tải lên tệp đa định dạng:** Hỗ trợ tải lên tài liệu và hình ảnh: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.png`, `.jpg`, `.jpeg`, `.epub`, `.txt`, `.csv`.
+- **Xem trước tệp trực quan:** Component `NoteFilePreview` hỗ trợ xem hình ảnh và thông tin tệp, có nút gỡ tệp nhanh chóng.
+
+### 🔍 Tìm Kiếm Thời Gian Thực (Keyword Search)
+- **Instant Search:** Thanh tìm kiếm responsive lọc ghi chú tức thì theo tiêu đề hoặc nội dung văn bản.
+- **Kết hợp bộ lọc:** Dễ dàng tìm kiếm trong toàn bộ ghi chú hoặc trong danh mục đang được chọn.
+
+### 🌐 Đa Ngôn Ngữ Toàn Diện (Full i18n)
+- Hỗ trợ chuyển đổi song ngữ **Tiếng Việt (`vi`)** và **Tiếng Anh (`en`)** linh hoạt.
+- Tự động lưu lựa chọn ngôn ngữ người dùng vào `localStorage`, chuyển đổi mượt mà không cần reload trang.
+
+### 🎨 Kiến Trúc UI Atomic Design & Design Tokens
+- Tuân thủ nghiêm ngặt mô hình **Atomic Design**:
+  - `atoms/`: Các thành phần cơ bản (`Button`, `Input`, `Avatar`, `Icon`,...).
+  - `molecules/`: Các thành phần kết hợp (`NoteInput`, `NoteCard`, `NoteCategoryPicker`, `NoteFilePreview`,...).
+  - `organisms/`: Các khối giao diện lớn (`Sidebar`, `SearchSection`, `NoteDetailModal`,...).
+  - `templates/`: Cấu trúc bố cục trang (`HomeTemplate`, `LoginTemplate`,...).
+- Chuẩn hóa style với **Class Variance Authority (`cva`)**, `clsx` và `tailwind-merge` (`cn`).
+- Thiết kế Dark / Light mode tinh tế với **Tailwind CSS v4**.
+
+### 🛡️ Backend Vững Chắc & Bảo Mật Cao (NestJS 11 & Prisma 7.8)
+- **Kiến trúc Module sạch:** `notes`, `user`, `parser`, `scraper`, `prisma`, `common`.
+- **Xác thực an toàn:** Mật khẩu được băm bằng thuật toán **Argon2**, hỗ trợ JWT lưu trong HttpOnly Cookie & Bearer Header.
+- **Strict Data Validation:** Tất cả DTOs được kiểm tra đầu vào nghiêm ngặt bằng `class-validator` và `class-transformer`.
+- **Global Error Handling & Toast Feedback:** Bắt lỗi tập trung với Global Exception Filter và hiển thị thông báo Toast trực quan cho người dùng.
+- **Bảo mật nhiều lớp:** Rate Limiting (Throttler), Content Security Policy (CSP) Headers, CORS Whitelist.
 
 ### 🖥️ Hỗ Trợ Đa Nền Tảng (Cross-Platform)
-- Ứng dụng Web hiện đại trên trình duyệt (Next.js 16 SSR & CSR).
-- Đóng gói ứng dụng Desktop gọn nhẹ cho macOS, Windows và Linux nhờ **Tauri v2**.
+- **Web App:** Next.js 16 (App Router) tối ưu hóa SEO và hiệu năng.
+- **Desktop App:** Đóng gói ứng dụng desktop native cho macOS, Windows và Linux nhờ **Tauri v2**.
 
 ---
 
-## 🏗️ Kiến Trúc Hệ Thống (Architecture)
+## 🏗️ Kiến Trúc Hệ Thống (Project Structure)
 
 ```
 ai-notebook/
-├── backend/                  # NestJS 11 Backend API Server
-│   ├── prisma/               # Schema và Migrations Database (PostgreSQL)
+├── backend/                      # NestJS 11 API Backend Server
+│   ├── prisma/                   # Prisma Schema & Database Migrations (PostgreSQL)
+│   │   ├── schema.prisma
+│   │   └── seed.ts
 │   ├── src/
-│   │   ├── ai/               # AI Engine (Gemini, OpenRouter, Prompt Generators)
-│   │   ├── common/           # Decorators, Guards, Interceptors, Filters
-│   │   ├── notes/            # Quản lý ghi chú (CRUD, Search, Processing)
-│   │   ├── parser/           # File parser, OCR, Audio processing
-│   │   ├── prisma/           # Prisma Service & Database Client
-│   │   ├── scraper/          # Cheerio Web Scraper
-│   │   ├── user/             # Authentication, Profile & JWT Management
-│   │   ├── app.module.ts     # Root Application Module
-│   │   └── main.ts           # Application Entry Point & Security Setup
-│   └── test/                 # Unit & E2E Tests
+│   │   ├── common/               # Filters (HttpException), Guards, Decorators, Interceptors
+│   │   ├── notes/                # Module Quản lý Ghi chú (CRUD, Search, Upload, DTOs, Repo)
+│   │   ├── parser/               # Trích xuất & xử lý tệp đính kèm, OCR, Audio
+│   │   ├── prisma/               # Prisma Database Service Client
+│   │   ├── scraper/              # Cheerio Web Scraper trích xuất nội dung liên kết
+│   │   ├── user/                 # Authentication, User Management, JWT & Argon2
+│   │   ├── app.module.ts         # Root AppModule
+│   │   └── main.ts               # Entrypoint, CORS, Security Headers, ValidationPipe
+│   ├── test/                     # Unit Tests & E2E Tests
+│   ├── tsconfig.json
+│   └── tsconfig.build.json
 │
-├── frontend/                 # Next.js 16 (App Router) + Tauri 2
-│   ├── src-tauri/            # Cấu hình Desktop App với Tauri v2 (Rust)
+├── frontend/                     # Next.js 16 (App Router) + Tailwind v4 + Tauri v2
+│   ├── src-tauri/                # Cấu hình đóng gói Desktop App với Tauri (Rust)
 │   ├── src/
-│   │   ├── app/              # Next.js App Router Pages & Routes
-│   │   ├── components/       # Atomic Design Components
-│   │   │   ├── atoms/        # Base UI elements (Button, Input, Avatar,...)
-│   │   │   ├── molecules/    # Composite items (NoteCard, FilterBar,...)
-│   │   │   ├── organisms/    # Complex sections (Header, Sidebar, NoteGrid,...)
-│   │   │   └── templates/    # Page layouts & structure
-│   │   ├── context/          # React Context (AuthContext, LanguageContext,...)
-│   │   ├── hooks/            # Custom React Hooks
-│   │   ├── lib/              # API Client, Socket Client, Utilities
-│   │   ├── locales/          # Tệp bản dịch i18n (vi.ts, en.ts)
-│   │   └── types/            # TypeScript Interface & Type Definitions
-│   └── public/               # Static assets & icons
+│   │   ├── app/                  # Next.js App Router Pages (Trang chủ, Auth, Dynamic routes)
+│   │   ├── components/           # Phân cấp Atomic Design Chuẩn mực
+│   │   │   ├── atoms/            # Button, Input, Icon, Avatar, FormField,...
+│   │   │   ├── molecules/        # NoteInput, NoteCard, NoteCategoryPicker, NoteFilePreview,...
+│   │   │   ├── organisms/        # Sidebar, SearchSection, NoteDetailModal,...
+│   │   │   └── templates/        # HomeTemplate, AuthTemplate,...
+│   │   ├── context/              # React Context (AuthContext, LanguageContext,...)
+│   │   ├── hooks/                # Custom React Hooks (useNotes, useI18n, useCustomCategories,...)
+│   │   ├── i18n/                 # Bản dịch ngôn ngữ (locales: vi.ts, en.ts)
+│   │   ├── lib/                  # UI Style tokens (cva/cn), Axios Client, Socket.io
+│   │   ├── types/                # TypeScript Type Definitions & Interfaces
+│   │   ├── utils/                # Helper functions, category utils, date formatters
+│   │   └── middleware.ts         # Edge Middleware bảo vệ routes & security headers
+│   └── public/                   # Static assets & icons
 └── README.md
 ```
 
@@ -87,10 +106,10 @@ ai-notebook/
 
 ## 🛠️ Yêu Cầu Cài Đặt (Prerequisites)
 
-- **Node.js:** `>= 20.x`
-- **Package Manager:** `npm`, `pnpm`, hoặc `bun`
-- **PostgreSQL:** `>= 15.x` (hoặc Docker PostgreSQL container)
-- **Rust & Cargo** *(chỉ cần nếu muốn build Desktop app với Tauri)*
+- **Node.js:** `>= 20.x` (khuyến nghị Node 22+)
+- **Package Manager:** `pnpm` (khuyến nghị `pnpm v11+`), `npm` hoặc `bun`
+- **PostgreSQL:** `>= 15.x` (cài đặt trực tiếp hoặc chạy qua Docker)
+- **Rust & Cargo:** *(chỉ cần khi build ứng dụng Desktop với Tauri)*
 
 ---
 
@@ -105,60 +124,56 @@ cd ai-notebook
 
 ---
 
-### 2. Cấu hình & Chạy Backend
+### 2. Khởi Động Backend
 
 1. Di chuyển vào thư mục backend:
    ```bash
    cd backend
    ```
 
-2. Cài đặt các thư viện:
+2. Cài đặt các thư viện phụ thuộc:
    ```bash
-   npm install
+   pnpm install
+   # hoặc npm install
    ```
 
-3. Tạo tệp cấu hình môi trường `.env`:
+3. Tạo tệp `.env` cấu hình môi trường:
    ```env
    PORT=3001
    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ai_notebook?schema=public"
    JWT_SECRET="your-super-secret-jwt-key"
    JWT_EXPIRES_IN="7d"
-
-   # AI Provider Keys
-   GEMINI_API_KEY="your-google-gemini-api-key"
-   OPENROUTER_API_KEY="your-openrouter-api-key"
-
-   # Optional Configs
    CORS_ORIGIN="http://localhost:3000"
    ```
 
-4. Chạy migration cơ sở dữ liệu với Prisma:
+4. Chạy migration và sinh Prisma Client:
    ```bash
-   npx prisma migrate dev
-   npx prisma generate
+   pnpm dlx prisma migrate dev
+   pnpm dlx prisma generate
    ```
 
-5. Khởi động Backend server:
+5. Khởi động Backend server (chế độ phát triển):
    ```bash
-   npm run start:dev
+   pnpm run start:dev
    ```
-   > Backend sẽ chạy tại: `http://localhost:3001` (API Endpoints sẵn sàng phục vụ).
+   > Backend API sẽ sẵn sàng tại: `http://localhost:3001`
 
 ---
 
-### 3. Cấu hình & Chạy Frontend
+### 3. Khởi Động Frontend
 
-1. Mở terminal mới và di chuyển vào thư mục frontend:
+1. Mở một cửa sổ Terminal mới và di chuyển vào thư mục frontend:
    ```bash
    cd frontend
    ```
 
-2. Cài đặt các thư viện:
+2. Cài đặt các thư viện phụ thuộc:
    ```bash
-   npm install
+   pnpm install
+   # hoặc npm install
    ```
 
-3. Tạo tệp `.env.local`:
+3. Tạo tệp cấu hình `.env.local`:
    ```env
    NEXT_PUBLIC_API_URL="http://localhost:3001"
    NEXT_PUBLIC_WS_URL="http://localhost:3001"
@@ -166,7 +181,7 @@ cd ai-notebook
 
 4. Khởi động Frontend ở chế độ phát triển:
    ```bash
-   npm run dev
+   pnpm run dev
    ```
    > Truy cập ứng dụng tại: `http://localhost:3000`
 
@@ -174,59 +189,62 @@ cd ai-notebook
 
 ### 4. Chạy Desktop App (Tauri v2) *(Tùy chọn)*
 
-Để chạy phiên bản Desktop trên máy tính:
+Để chạy ứng dụng native trên máy tính (macOS, Windows, Linux):
+
 ```bash
 cd frontend
-npm run desktop
+pnpm run desktop
 ```
 
 ---
 
-## 🧪 Kiểm Thử & Kiểm Tra Chất Lượng Mã Nguồn (Lint & Test)
+## 📡 Danh Sách API Endpoints Chính
 
-Dự án tuân thủ nghiêm ngặt tiêu chuẩn không lỗi linter và type-checking đầy đủ:
-
-```bash
-# Kiểm tra Backend
-cd backend
-npm run lint
-npm run test
-
-# Kiểm tra Frontend
-cd frontend
-npm run lint
-npm run test
-npm run build
-```
-
----
-
-## 📡 Tổng Quan API Endpoints Chính
-
-| Method | Endpoint | Mô tả |
+| Phương thức | Endpoint | Mô tả |
 |---|---|---|
-| `POST` | `/api/user/register` | Đăng ký tài khoản mới |
-| `POST` | `/api/user/login` | Đăng nhập & cấp phát JWT token |
+| `POST` | `/api/user/register` | Đăng ký tài khoản người dùng mới |
+| `POST` | `/api/user/login` | Đăng nhập tài khoản, thiết lập HttpOnly cookie & trả về JWT Token |
+| `POST` | `/api/user/logout` | Đăng xuất và xóa Cookie phiên làm việc |
 | `GET` | `/api/user/me` | Lấy thông tin tài khoản hiện tại |
-| `GET` | `/api/notes` | Lấy danh sách ghi chú (hỗ trợ filter, pagination, search) |
-| `POST` | `/api/notes` | Tạo ghi chú mới kèm phân tích AI |
-| `POST` | `/api/notes/upload` | Tải lên tệp đính kèm (ảnh, audio, tài liệu) |
-| `GET` | `/api/notes/:id` | Xem chi tiết ghi chú |
-| `PATCH` | `/api/notes/:id` | Cập nhật ghi chú |
-| `DELETE` | `/api/notes/:id` | Xoá ghi chú |
+| `GET` | `/api/notes` | Lấy danh sách ghi chú (hỗ trợ lọc theo `category`, tìm kiếm `keyword`, phân trang `page`/`limit`) |
+| `POST` | `/api/notes` | Tạo mới ghi chú (tiêu đề, nội dung, danh mục) |
+| `POST` | `/api/notes/upload` | Tải lên tệp đính kèm / ảnh cho ghi chú |
+| `GET` | `/api/notes/:id` | Xem chi tiết 1 ghi chú theo ID |
+| `PATCH` | `/api/notes/:id` | Cập nhật ghi chú (tiêu đề, nội dung, danh mục, trạng thái ghim/lưu trữ) |
+| `DELETE` | `/api/notes/:id` | Xóa ghi chú |
 
 ---
 
-## 🤝 Đóng Góp (Contributing)
+## 🧪 Kiểm Thử & Kiểm Tra Chất Lượng Mã Nguồn (Quality Assurance)
 
-1. Fork dự án
-2. Tạo branch tính năng (`git checkout -b feature/amazing-feature`)
-3. Commit thay đổi (`git commit -m 'feat: add amazing feature'`)
-4. Push branch lên remote (`git push origin feature/amazing-feature`)
-5. Tạo Pull Request
+Dự án áp dụng quy chuẩn nghiêm ngặt: **Zero Linter Warnings / Zero TypeScript Errors**.
+
+```bash
+# Kiểm tra & Build Backend
+cd backend
+pnpm run lint
+pnpm run test
+pnpm run build
+
+# Kiểm tra & Build Frontend
+cd frontend
+pnpm run lint
+pnpm run test
+pnpm run build
+```
+
+---
+
+## 🤝 Đóng Góp Phát Triển (Contributing)
+
+1. Fork dự án về tài khoản của bạn.
+2. Tạo branch tính năng mới: `git checkout -b feat/ten-tinh-nang`.
+3. Commit các thay đổi với quy ước Conventional Commits: `git commit -m 'feat: them tinh nang moi'`.
+4. Push lên GitHub: `git push origin feat/ten-tinh-nang`.
+5. Mở Pull Request để được review và merge.
 
 ---
 
 ## 📄 Giấy Phép (License)
 
-Dự án được phân phối dưới giấy phép [MIT](LICENSE).
+Dự án được phân phối dưới giấy phép **[MIT](LICENSE)**.
