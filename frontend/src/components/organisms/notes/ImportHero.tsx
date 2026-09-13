@@ -5,6 +5,7 @@ import { Plus, Check, AlertCircle } from 'lucide-react';
 import { useI18n } from '@/hooks/useI18n';
 import Icon from '@/components/atoms/common/Icon';
 import { useCustomCategories } from '@/hooks/useCustomCategories';
+import { cn } from '@/lib/ui-styles';
 
 export interface ImportHeroProps {
   onCreateCategory?: (name: string) => { success: boolean; error?: string; category?: string };
@@ -81,11 +82,12 @@ export const ImportHero = memo(function ImportHero({
         {/* Feedback Alert */}
         {statusMessage && (
           <div
-            className={`mt-2.5 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200 ${
+            className={cn(
+              'mt-2.5 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200 border',
               statusMessage.type === 'success'
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40'
-                : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 border border-red-200/60 dark:border-red-800/40'
-            }`}
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/40'
+                : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 border-red-200/60 dark:border-red-800/40'
+            )}
           >
             <Icon
               icon={statusMessage.type === 'success' ? Check : AlertCircle}

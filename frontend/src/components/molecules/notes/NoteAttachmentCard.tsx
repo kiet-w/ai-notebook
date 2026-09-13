@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useI18n } from '@/hooks/useI18n';
+import { cn } from '@/lib/ui-styles';
 
 export interface NoteAttachmentCardProps {
   url: string;
@@ -9,13 +10,18 @@ export interface NoteAttachmentCardProps {
   size?: 'sm' | 'md';
 }
 
-export function NoteAttachmentCard({ url, className = '', size = 'md' }: NoteAttachmentCardProps) {
+export function NoteAttachmentCard({ url, className, size = 'md' }: NoteAttachmentCardProps) {
   const { t } = useI18n();
   const fileName = url.split('/').pop() || t('notes.document');
 
   if (size === 'sm') {
     return (
-      <div className={`p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200/50 dark:border-zinc-800/40 flex items-center justify-between gap-4 ${className}`}>
+      <div
+        className={cn(
+          'p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200/50 dark:border-zinc-800/40 flex items-center justify-between gap-4',
+          className
+        )}
+      >
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-2xl shrink-0">📄</span>
           <div className="min-w-0">
@@ -39,7 +45,12 @@ export function NoteAttachmentCard({ url, className = '', size = 'md' }: NoteAtt
   }
 
   return (
-    <div className={`p-4 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200/60 dark:border-zinc-800/40 flex items-center justify-between gap-4 ${className}`}>
+    <div
+      className={cn(
+        'p-4 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200/60 dark:border-zinc-800/40 flex items-center justify-between gap-4',
+        className
+      )}
+    >
       <div className="flex items-center gap-3 min-w-0">
         <span className="text-3xl shrink-0">📄</span>
         <div className="min-w-0">

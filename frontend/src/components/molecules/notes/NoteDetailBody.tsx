@@ -6,6 +6,7 @@ import { useI18n } from '@/hooks/useI18n';
 import NoteMarkdownRenderer from '@/components/atoms/notes/NoteMarkdownRenderer';
 import NoteAttachmentCard from './NoteAttachmentCard';
 import NoteDetailSkeleton from './NoteDetailSkeleton';
+import { cn } from '@/lib/ui-styles';
 
 export interface NoteDetailBodyProps {
   note: Note;
@@ -21,8 +22,21 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
   }
 
   return (
-    <div className={`h-full ${note.content ? 'space-y-8 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden' : 'max-w-3xl mx-auto space-y-6'}`}>
-      <div className={note.content ? 'grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0 items-start lg:items-stretch lg:flex-1 lg:overflow-hidden h-full' : 'space-y-6'}>
+    <div
+      className={cn(
+        'h-full',
+        note.content
+          ? 'space-y-8 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden'
+          : 'max-w-3xl mx-auto space-y-6'
+      )}
+    >
+      <div
+        className={cn(
+          note.content
+            ? 'grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0 items-start lg:items-stretch lg:flex-1 lg:overflow-hidden h-full'
+            : 'space-y-6'
+        )}
+      >
         {/* Left Column: Full Content Analysis (if available) */}
         {note.content && (
           <div className="lg:col-span-7 space-y-6 lg:h-full lg:overflow-y-auto no-scrollbar lg:p-8 lg:pr-4">

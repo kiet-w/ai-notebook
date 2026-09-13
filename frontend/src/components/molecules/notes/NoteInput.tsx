@@ -129,19 +129,21 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
           disabled={disabled}
         />
 
-        {showCategorySelector && (
-          <NoteCategoryPicker
-            categories={availableCategories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-        )}
-
-        <div className="flex justify-between items-center px-4 pb-2">
-          <div className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">
-            {content.length > 0 ? t('notes.charCount', { count: content.length }) : t('notes.notionCapture')}
+        <div className="flex justify-between items-center px-4 pb-2 pt-1 gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {showCategorySelector && (
+              <NoteCategoryPicker
+                categories={availableCategories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                disabled={disabled}
+              />
+            )}
+            <div className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider truncate">
+              {content.length > 0 ? t('notes.charCount', { count: content.length }) : t('notes.notionCapture')}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
             {mounted && onUpload && (
               <>
                 <input

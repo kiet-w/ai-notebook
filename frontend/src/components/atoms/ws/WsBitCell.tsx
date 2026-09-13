@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/ui-styles';
 
 interface WsBitCellProps {
   label: string;     // short label shown inside
@@ -24,7 +25,10 @@ const variantClass: Record<string, string> = {
 export default function WsBitCell({ label, detail, bits = 1, variant = 'gray', value }: WsBitCellProps) {
   return (
     <div
-      className={`flex flex-col items-center justify-center border rounded px-1 py-1.5 min-h-[52px] ${variantClass[variant]}`}
+      className={cn(
+        'flex flex-col items-center justify-center border rounded px-1 py-1.5 min-h-[52px]',
+        variantClass[variant]
+      )}
       style={{ gridColumn: `span ${bits}` }}
     >
       <span className="font-mono text-[10px] font-semibold text-center leading-tight">{label}</span>

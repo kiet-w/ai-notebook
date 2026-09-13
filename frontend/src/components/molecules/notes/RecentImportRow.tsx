@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Loader2, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { Category, Status } from '@/types/note';
+import { cn } from '@/lib/ui-styles';
 
 export interface RecentImportRowProps {
   title: string;
@@ -28,14 +29,17 @@ export const RecentImportRow = memo(function RecentImportRow({
   status,
   onClick,
   disabled = status === 'PROCESSING',
-  className = '',
+  className,
 }: RecentImportRowProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 bg-white/50 dark:bg-zinc-900/20 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-all duration-200 cursor-pointer group text-left disabled:cursor-default disabled:opacity-70 ${className}`}
+      className={cn(
+        'w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-zinc-200/50 dark:border-zinc-800/40 bg-white/50 dark:bg-zinc-900/20 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-all duration-200 cursor-pointer group text-left disabled:cursor-default disabled:opacity-70',
+        className
+      )}
     >
       {getStatusIcon(status)}
       <span className="flex-1 text-sm font-medium text-foreground truncate">

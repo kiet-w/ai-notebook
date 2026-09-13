@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/ui-styles';
 
 type Opcode = 'text' | 'binary' | 'close' | 'ping' | 'pong' | 'continuation';
 
@@ -14,12 +15,19 @@ const OPCODES: Record<Opcode, { hex: string; label: string; color: string }> = {
 interface WsOpcodeBadgeProps {
   opcode: Opcode;
   showLabel?: boolean;
+  className?: string;
 }
 
-export default function WsOpcodeBadge({ opcode, showLabel = true }: WsOpcodeBadgeProps) {
+export default function WsOpcodeBadge({ opcode, showLabel = true, className }: WsOpcodeBadgeProps) {
   const { hex, label, color } = OPCODES[opcode];
   return (
-    <span className={`inline-flex items-center gap-1 font-mono text-[10.5px] border rounded px-1.5 py-0.5 ${color}`}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 font-mono text-[10.5px] border rounded px-1.5 py-0.5',
+        color,
+        className
+      )}
+    >
       <span className="opacity-70">{hex}</span>
       {showLabel && <span className="font-medium">{label}</span>}
     </span>
@@ -27,3 +35,4 @@ export default function WsOpcodeBadge({ opcode, showLabel = true }: WsOpcodeBadg
 }
 
 export type { Opcode };
+

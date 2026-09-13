@@ -3,6 +3,7 @@
 import React, { memo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useI18n } from '@/hooks/useI18n';
+import { cn } from '@/lib/ui-styles';
 
 export interface AnalyzingToastProps {
   isAnalyzing?: boolean;
@@ -15,7 +16,7 @@ export const AnalyzingToast = memo(function AnalyzingToast({
   isAnalyzing = true,
   title,
   description,
-  className = '',
+  className,
 }: AnalyzingToastProps) {
   const { t } = useI18n();
 
@@ -25,7 +26,12 @@ export const AnalyzingToast = memo(function AnalyzingToast({
   const displayDesc = description ?? t('notes.classifyingCategory');
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3.5 bg-white/80 dark:bg-[#0b0b0f]/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800/50 shadow-xl rounded-2xl p-4 max-w-xs ${className}`}>
+    <div
+      className={cn(
+        'fixed bottom-6 right-6 z-50 flex items-center gap-3.5 bg-white/80 dark:bg-[#0b0b0f]/80 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800/50 shadow-xl rounded-2xl p-4 max-w-xs',
+        className
+      )}
+    >
       <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-primary">
         <Loader2 className="w-4 h-4 animate-spin text-zinc-500 dark:text-zinc-400" />
       </div>

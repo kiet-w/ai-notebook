@@ -9,6 +9,7 @@ import { getCategoryLabel } from '@/utils/category';
 import { getRelativeImageUrl } from '@/utils/image';
 import NoteMarkdownRenderer from '@/components/atoms/notes/NoteMarkdownRenderer';
 import NoteAttachmentCard from './NoteAttachmentCard';
+import { cn } from '@/lib/ui-styles';
 
 export interface NoteCardPreviewProps {
   note: Note;
@@ -34,7 +35,10 @@ export function NoteCardPreview({
   return (
     <div 
       onClick={onClick}
-      className={`absolute top-0 ${popupPos === 'right' ? 'right-0' : 'left-0'} w-full h-[400px] sm:w-[calc(200%+1rem)] sm:h-[calc(200%+1rem)] z-50 p-6 rounded-2xl border border-zinc-300/60 dark:border-zinc-700/60 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-2xl flex flex-col gap-4 cursor-pointer transition-all`}
+      className={cn(
+        'absolute top-0 w-full h-[400px] sm:w-[calc(200%+1rem)] sm:h-[calc(200%+1rem)] z-50 p-6 rounded-2xl border border-zinc-300/60 dark:border-zinc-700/60 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-2xl flex flex-col gap-4 cursor-pointer transition-all',
+        popupPos === 'right' ? 'right-0' : 'left-0'
+      )}
     >
       <div className="flex items-start justify-between gap-4 shrink-0">
         <h3 className="font-semibold text-foreground leading-tight text-[17px] tracking-tight">

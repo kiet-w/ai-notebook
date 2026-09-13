@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/ui-styles';
 
 type StepState = 'idle' | 'ok' | 'bad' | 'warn';
 
@@ -20,7 +21,10 @@ const stateClasses: Record<StepState, string> = {
 export default function WsStepNum({ num, state = 'idle' }: WsStepNumProps) {
   return (
     <div
-      className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 border-[1.5px] font-mono text-[11px] font-bold transition-colors duration-300 ${stateClasses[state]}`}
+      className={cn(
+        'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 border-[1.5px] font-mono text-[11px] font-bold transition-colors duration-300',
+        stateClasses[state]
+      )}
     >
       {num}
     </div>
@@ -28,3 +32,4 @@ export default function WsStepNum({ num, state = 'idle' }: WsStepNumProps) {
 }
 
 export type { StepState };
+

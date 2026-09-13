@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/ui-styles';
 
 type HashVariant = 'key' | 'magic' | 'concat' | 'sha' | 'b64' | 'mismatch' | 'default';
 
@@ -6,6 +7,7 @@ interface WsHashValueProps {
   children: React.ReactNode;
   variant?: HashVariant;
   span?: boolean; // grid-column: span 3
+  className?: string;
 }
 
 const variantClasses: Record<HashVariant, string> = {
@@ -21,10 +23,15 @@ const variantClasses: Record<HashVariant, string> = {
 /**
  * Monospace value box used inside the hash calculator visualizer.
  */
-export default function WsHashValue({ children, variant = 'default', span = false }: WsHashValueProps) {
+export default function WsHashValue({ children, variant = 'default', span = false, className }: WsHashValueProps) {
   return (
     <div
-      className={`font-mono text-[11px] px-2.5 py-1.5 rounded border break-all leading-relaxed min-h-[28px] transition-colors duration-300 ${variantClasses[variant]} ${span ? 'col-span-3' : ''}`}
+      className={cn(
+        'font-mono text-[11px] px-2.5 py-1.5 rounded border break-all leading-relaxed min-h-[28px] transition-colors duration-300',
+        variantClasses[variant],
+        span && 'col-span-3',
+        className
+      )}
     >
       {children}
     </div>
@@ -32,3 +39,4 @@ export default function WsHashValue({ children, variant = 'default', span = fals
 }
 
 export type { HashVariant };
+
