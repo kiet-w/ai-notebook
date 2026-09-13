@@ -41,5 +41,11 @@
     "jest-environment-jsdom": "^30.4.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "file:../../sharp@0.34.5/node_modules/sharp": true,
+    "file:../sharp@0.34.5/node_modules/sharp": true,
+    "unrs-resolver": true,
+    "file:../../unrs-resolver@1.12.2/node_modules/unrs-resolver": true
   }
 }
