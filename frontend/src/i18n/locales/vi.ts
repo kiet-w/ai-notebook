@@ -117,8 +117,8 @@ export const vi: TranslationDictionary = {
   notes: {
     importTitle: 'Nhập nội dung',
     importSubtitle: 'Dán URL, nhập ghi chú hoặc tải file để lưu trữ tức thì.',
-    titlePlaceholder: 'Tiêu đề ghi chú (tuỳ chọn)...',
-    thoughtPlaceholder: 'Nội dung ghi chú... (Enter để lưu, Shift+Enter để xuống dòng)',
+    titlePlaceholder: 'Nhập tiêu đề ghi chú...',
+    thoughtPlaceholder: 'Nội dung chi tiết... (Enter để lưu, Shift+Enter để xuống dòng)',
     notionCapture: 'Ghi chép phong cách Notion',
     charCount: '{count} ký tự',
     uploadDoc: 'Tải lên tài liệu',

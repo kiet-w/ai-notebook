@@ -122,14 +122,23 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
             onRemove={() => setSelectedFile(null)}
           />
         )}
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder={t('notes.titlePlaceholder') || 'Tiêu đề ghi chú (tuỳ chọn)...'}
-          disabled={disabled}
-          className="w-full px-4 pt-2.5 pb-1 text-base font-semibold text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 bg-transparent border-none outline-none focus:outline-none"
-        />
+        <div className="px-4 pt-2.5 pb-2 border-b border-zinc-100 dark:border-zinc-800/60">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                textareaRef.current?.focus();
+              }
+            }}
+            placeholder={t('notes.titlePlaceholder')}
+            aria-label={t('notes.titlePlaceholder')}
+            disabled={disabled}
+            className="w-full text-base font-semibold text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 bg-transparent border-none outline-none focus:outline-none"
+          />
+        </div>
         <Input
           ref={textareaRef}
           value={content}

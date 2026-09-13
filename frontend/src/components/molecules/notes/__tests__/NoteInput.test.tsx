@@ -86,4 +86,18 @@ describe('NoteInput component', () => {
       'Important Meeting'
     );
   });
+
+  it('focuses the content textarea when Enter is pressed in title input', () => {
+    const mockSubmit = jest.fn();
+    render(<NoteInput onSubmit={mockSubmit} />);
+
+    const titleInput = screen.getByPlaceholderText(/Note title/i);
+    const textarea = screen.getByPlaceholderText('Capture your thought...');
+
+    fireEvent.change(titleInput, { target: { value: 'My Title' } });
+    fireEvent.keyDown(titleInput, { key: 'Enter' });
+
+    expect(mockSubmit).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(textarea);
+  });
 });

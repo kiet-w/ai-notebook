@@ -117,7 +117,7 @@ export const en: TranslationDictionary = {
   notes: {
     importTitle: 'Import Context',
     importSubtitle: 'Paste URLs, type notes, or upload files for instant storage.',
-    titlePlaceholder: 'Note title (optional)...',
+    titlePlaceholder: 'Note title...',
     thoughtPlaceholder: 'Note content... (Enter to save, Shift+Enter for newline)',
     notionCapture: 'Notion style capture',
     charCount: '{count} characters',
