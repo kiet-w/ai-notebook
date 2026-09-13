@@ -139,9 +139,6 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
                 disabled={disabled}
               />
             )}
-            <div className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider truncate">
-              {content.length > 0 ? t('notes.charCount', { count: content.length }) : t('notes.notionCapture')}
-            </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
             {mounted && onUpload && (
