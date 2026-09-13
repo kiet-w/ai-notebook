@@ -2,7 +2,7 @@
 
 import { memo, useMemo, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Download, Settings, Brain, LogOut, Plus, Check, X } from 'lucide-react';
+import { Download, Settings, LogOut, Plus, Check, X } from 'lucide-react';
 import Button from '@/components/atoms/common/Button';
 import Icon from '@/components/atoms/common/Icon';
 import LanguageSwitcher from '@/components/atoms/common/LanguageSwitcher';
@@ -56,16 +56,6 @@ const Sidebar = memo(function Sidebar({ selectedCategory, onSelectCategory, unre
 
   return (
     <aside className="w-64 shrink-0 bg-sidebar dark:bg-[#09090b]/40 border-r border-zinc-200/50 dark:border-zinc-900/45 flex flex-col h-full sticky top-0 px-4 py-6 select-none backdrop-blur-md">
-      <div className="flex items-center gap-2.5 px-2.5 py-2 mb-6 rounded-xl hover:bg-zinc-200/20 dark:hover:bg-zinc-900/30 border border-transparent hover:border-zinc-200/30 dark:hover:border-zinc-900/20 cursor-pointer group">
-        <div className="w-8 h-8 rounded-lg bg-zinc-950 dark:bg-zinc-50 text-white dark:text-zinc-950 flex items-center justify-center shadow-md shadow-zinc-950/10 dark:shadow-none">
-          <Icon icon={Brain} size={15} className="text-white dark:text-zinc-950 stroke-[2]" />
-        </div>
-        <div className="flex flex-col min-w-0">
-          <span className="font-bold text-[13px] text-foreground truncate leading-none mb-1">{t('sidebar.brandTitle')}</span>
-          <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.18em] leading-none">{t('sidebar.workspace')}</span>
-        </div>
-      </div>
-
       <nav className="flex-1 space-y-1">
         <Button
           variant="nav"
