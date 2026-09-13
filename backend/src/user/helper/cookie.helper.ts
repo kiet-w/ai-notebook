@@ -7,7 +7,7 @@ export function setRefreshTokenCookie(
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
@@ -17,7 +17,7 @@ export function clearRefreshTokenCookie(res: Response): void {
   res.clearCookie('refreshToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     path: '/',
   });
 }

@@ -318,7 +318,7 @@ export class AiService {
           ? {
               responseMimeType: 'application/json',
               responseSchema: zodToJsonSchema(
-                (schemaOverride ?? AiAnalysisSchema) as any,
+                schemaOverride ?? AiAnalysisSchema,
               ),
             }
           : {}),

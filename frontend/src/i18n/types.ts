@@ -97,7 +97,9 @@ export interface AuthTranslations {
   google: string;
   github: string;
   loginFailed: string;
+  loginSuccess?: string;
   registerFailed: string;
+  registerSuccess?: string;
   haveAccount: string;
   noAccount: string;
   alreadyHaveAccount?: string;

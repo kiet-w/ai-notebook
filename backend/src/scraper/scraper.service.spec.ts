@@ -41,10 +41,13 @@ describe('ScraperService', () => {
       content: 'Main Heading This is the main content.',
     });
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(mockedAxios.get).toHaveBeenCalledWith('https://example.com', {
-      timeout: 10000,
-      maxContentLength: 10 * 1024 * 1024,
-    });
+    expect(mockedAxios.get).toHaveBeenCalledWith(
+      'https://example.com',
+      expect.objectContaining({
+        timeout: 10000,
+        maxContentLength: 10 * 1024 * 1024,
+      }),
+    );
   });
 
   it('should handle errors when scraping', async () => {

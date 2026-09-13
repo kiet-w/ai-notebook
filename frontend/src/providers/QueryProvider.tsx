@@ -29,7 +29,9 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
 
       socket = io(BASE_SOCKET_URL, {
         query: { token },
-        transports: ['websocket'], // Force WebSocket, skip polling
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1500,
       });
 
       socket.on('note-updated', (payload) => {
@@ -79,12 +81,12 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
           queryClient.invalidateQueries({ queryKey: ['unreadCounts'] });
 
         } catch (error) {
-          console.error('Failed to parse WebSocket data:', error);
+          console.warn('[WebSocket] Failed to parse note data:', error);
         }
       });
 
       socket.on('connect_error', (err) => {
-        console.error('WebSocket connection error:', err.message);
+        console.warn('[WebSocket] Connection attempt notice:', err.message);
       });
     }
     

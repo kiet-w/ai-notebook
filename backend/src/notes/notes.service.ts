@@ -80,7 +80,10 @@ export class NotesService {
     return note?.userId === userId ? note : null;
   }
 
-  private async processNote(note: Note, detailLevel: 'short' | 'medium' | 'long' = 'medium') {
+  private async processNote(
+    note: Note,
+    detailLevel: 'short' | 'medium' | 'long' = 'medium',
+  ) {
     this.logger.log(`Starting processing for note ${note.id}`);
 
     try {
@@ -91,11 +94,15 @@ export class NotesService {
       const content = [scrapeResult.content, note.userInput]
         .filter(Boolean)
         .join('\n\n');
-      
+
       let aiResult;
       if (note.category && note.category !== 'OTHER') {
         // If user provided a specific category, we can use the fast parallel analysis
-        aiResult = await this.aiService.analyzeFast(content, detailLevel, note.category);
+        aiResult = await this.aiService.analyzeFast(
+          content,
+          detailLevel,
+          note.category,
+        );
       } else {
         // Otherwise, wait for AI to determine category first to pick the right structure
         aiResult = await this.aiService.analyze(content, detailLevel);
@@ -187,7 +194,11 @@ export class NotesService {
     return note;
   }
 
-  private async processFileNote(note: Note, file: Express.Multer.File, detailLevel: 'short' | 'medium' | 'long' = 'medium') {
+  private async processFileNote(
+    note: Note,
+    file: Express.Multer.File,
+    detailLevel: 'short' | 'medium' | 'long' = 'medium',
+  ) {
     this.logger.log(`Starting file processing for note ${note.id}`);
 
     let tempFilePath: string | null = null;
@@ -226,7 +237,11 @@ export class NotesService {
 
         // Analyze the parsed markdown
         if (note.category && note.category !== 'OTHER') {
-          aiResult = await this.aiService.analyzeFast(markdownContent, detailLevel, note.category);
+          aiResult = await this.aiService.analyzeFast(
+            markdownContent,
+            detailLevel,
+            note.category,
+          );
         } else {
           aiResult = await this.aiService.analyze(markdownContent, detailLevel);
         }

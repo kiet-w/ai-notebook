@@ -87,10 +87,7 @@ export class UserController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies['refreshToken'] as string | undefined;
     if (refreshToken) {
       await this.userService.logout(refreshToken);

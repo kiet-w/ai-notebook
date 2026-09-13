@@ -65,15 +65,20 @@ describe('NotesController', () => {
 
       (service.createFromFile as jest.Mock).mockResolvedValue(mockNote);
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const result = await controller.uploadFile(mockFile, undefined, {
-        user: { id: 'test-user-id', role: 'user' },
-      } as any);
+      const result = await controller.uploadFile(
+        mockFile,
+        undefined,
+        undefined,
+        {
+          user: { id: 'test-user-id', role: 'user' },
+        } as unknown as Parameters<typeof controller.uploadFile>[3],
+      );
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.createFromFile).toHaveBeenCalledWith(
         mockFile,
         'test-user-id',
+        undefined,
         undefined,
       );
       expect(result.id).toBe('123');
@@ -85,6 +90,7 @@ describe('NotesController', () => {
         controller.uploadFile(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           null as any,
+          undefined,
           undefined,
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           {

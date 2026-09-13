@@ -6,7 +6,9 @@ import Button from '@/components/atoms/common/Button';
 import { FormField } from '@/components/molecules/auth/FormField';
 import { GoogleIcon, GithubIcon } from '@/components/atoms/auth/SocialIcons';
 import { useI18n } from '@/hooks/useI18n';
+import { useToast } from '@/hooks/useToast';
 import { api } from '@/utils/api';
+import { parseApiError } from '@/utils/error';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -15,6 +17,7 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { t } = useI18n();
+  const { toast } = useToast();
 
   const handleFillTestAccount = () => {
     setEmail('admin@example.com');
@@ -32,10 +35,17 @@ export default function LoginForm() {
 
     try {
       await api.login(submitEmail, submitPassword);
+      toast.success(t('auth.loginSuccess'));
       router.push('/');
     } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || t('auth.loginFailed'));
+      const parsed = parseApiError(err);
+      console.error('[auth/login error]', {
+        status: parsed.statusCode,
+        data: parsed.raw,
+      });
+      const errorMsg = parsed.message || t('auth.loginFailed');
+      setError(errorMsg);
+      toast.error(errorMsg, `Lỗi ${parsed.statusCode}`);
     } finally {
       setIsLoading(false);
     }

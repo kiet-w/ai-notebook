@@ -8,6 +8,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as fs from 'fs';
 import cookieParser from 'cookie-parser';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const uploadsDir = join(process.cwd(), 'uploads');
@@ -32,11 +33,7 @@ async function bootstrap() {
       const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
         origin || '',
       );
-      if (
-        !origin ||
-        isLocalhost ||
-        origin === process.env.FRONTEND_ORIGIN
-      ) {
+      if (!origin || isLocalhost || origin === process.env.FRONTEND_ORIGIN) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -54,6 +51,7 @@ async function bootstrap() {
       },
     }),
   );
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   await app.listen(process.env.PORT ?? 3001).catch((err) => {
     console.error(err);

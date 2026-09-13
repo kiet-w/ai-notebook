@@ -38,6 +38,7 @@ export default function HomeTemplate() {
             <NoteInput
               onSubmit={handleCapture}
               onUpload={handleUpload}
+              showCategorySelector={true}
             />
           </div>
 

@@ -38,13 +38,10 @@ const safeLookup = (
 ) => {
   dns.lookup(hostname, options, (err, address, family) => {
     if (err) return callback(err, address, family);
-    const ip = typeof address === 'string' ? address : (address[0]?.address ?? '');
+    const ip =
+      typeof address === 'string' ? address : (address[0]?.address ?? '');
     if (ip && isPrivateIp(ip)) {
-      return callback(
-        new Error('SSRF blocked: private IP detected') as NodeJS.ErrnoException,
-        '',
-        0,
-      );
+      return callback(new Error('SSRF blocked: private IP detected'), '', 0);
     }
     callback(null, address, family);
   });
@@ -83,11 +80,12 @@ export class ScraperService {
       content = content.replace(/\s+/g, ' ').trim();
 
       return { title, content };
-    } catch (err: any) {
-      throw new HttpException(
-        err.message || 'Failed to scrape URL',
-        HttpStatus.BAD_REQUEST,
-      );
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? `Failed to scrape URL: ${err.message}`
+          : 'Failed to scrape URL';
+      throw new HttpException(message, HttpStatus.BAD_REQUEST);
     }
   }
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
+import ToastProvider from "@/providers/ToastProvider";
 import { I18nProvider } from "@/i18n";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({
       <body className="h-full bg-background text-foreground">
         <I18nProvider>
           <QueryProvider>
-            {children}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </QueryProvider>
         </I18nProvider>
       </body>

@@ -6,12 +6,15 @@ import Button from '@/components/atoms/common/Button';
 import { FormField } from '@/components/molecules/auth/FormField';
 import { GoogleIcon, GithubIcon } from '@/components/atoms/auth/SocialIcons';
 import { useI18n } from '@/hooks/useI18n';
+import { useToast } from '@/hooks/useToast';
 import { api } from '@/utils/api';
+import { parseApiError } from '@/utils/error';
 
 export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { t } = useI18n();
+  const { toast } = useToast();
 
   const [error, setError] = useState<string | null>(null);
 
@@ -29,10 +32,17 @@ export default function RegisterForm() {
 
     try {
       await api.register(email, password, username);
+      toast.success(t('auth.registerSuccess'));
       router.push('/');
     } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || t('auth.registerFailed'));
+      const parsed = parseApiError(err);
+      console.error('[auth/register error]', {
+        status: parsed.statusCode,
+        data: parsed.raw,
+      });
+      const errorMsg = parsed.message || t('auth.registerFailed');
+      setError(errorMsg);
+      toast.error(errorMsg, `Lỗi ${parsed.statusCode}`);
     } finally {
       setIsLoading(false);
     }

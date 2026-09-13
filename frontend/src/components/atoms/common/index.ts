@@ -8,3 +8,5 @@ export * from './Input';
 export { default as Input } from './Input';
 export * from './LanguageSwitcher';
 export { default as LanguageSwitcher } from './LanguageSwitcher';
+export * from './ToastItem';
+export { default as ToastItem } from './ToastItem';
