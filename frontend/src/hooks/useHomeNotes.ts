@@ -79,7 +79,7 @@ export function useHomeNotes() {
   );
 
   const handleUpload = useCallback(
-    async (file: File, category?: Category) => {
+    async (file: File, category?: Category, title?: string, content?: string) => {
       let uploadFile = file;
 
       if (file.type.startsWith('image/')) {
@@ -91,7 +91,7 @@ export function useHomeNotes() {
       }
 
       try {
-        const realNote = await api.uploadFile(uploadFile, category);
+        const realNote = await api.uploadFile(uploadFile, category, title, content);
         setPendingNoteId(realNote.id);
 
         queryClient.setQueryData<Note[]>(['notes', 'recent'], (old = []) => {

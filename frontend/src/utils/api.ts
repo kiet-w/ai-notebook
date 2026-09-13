@@ -144,12 +144,23 @@ export const api = {
     return normalizeNote(res.data as ApiNote);
   },
 
-  async uploadFile(file: File, category?: string): Promise<Note> {
+  async uploadFile(
+    file: File,
+    category?: string,
+    title?: string,
+    content?: string,
+  ): Promise<Note> {
     const formData = new FormData();
     formData.append('file', file);
     const apiCategory = toApiCategory(category);
     if (apiCategory) {
       formData.append('category', apiCategory);
+    }
+    if (title?.trim()) {
+      formData.append('title', title.trim());
+    }
+    if (content?.trim()) {
+      formData.append('content', content.trim());
     }
     const res = await apiInstance.post('/notes/upload', formData, {
       headers: {

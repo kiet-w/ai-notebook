@@ -100,4 +100,35 @@ describe('NoteInput component', () => {
     expect(mockSubmit).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(textarea);
   });
+
+  it('handles image paste and submits with file, title, and content', () => {
+    const mockSubmit = jest.fn();
+    const mockUpload = jest.fn();
+    render(<NoteInput onSubmit={mockSubmit} onUpload={mockUpload} />);
+
+    const titleInput = screen.getByPlaceholderText(/Note title/i);
+    const textarea = screen.getByPlaceholderText('Capture your thought...');
+    const file = new File(['fake-img'], 'screenshot.png', { type: 'image/png' });
+
+    fireEvent.change(titleInput, { target: { value: 'My Screenshot Title' } });
+    fireEvent.change(textarea, { target: { value: 'Note details' } });
+
+    fireEvent.paste(textarea, {
+      clipboardData: {
+        files: [file],
+        items: [{ type: 'image/png', getAsFile: () => file }],
+      },
+    });
+
+    expect(screen.getByText('screenshot.png')).toBeInTheDocument();
+
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
+
+    expect(mockUpload).toHaveBeenCalledWith(
+      file,
+      undefined,
+      'My Screenshot Title',
+      'Note details',
+    );
+  });
 });

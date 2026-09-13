@@ -4,6 +4,8 @@
 import React, { useState } from 'react';
 import { useI18n } from '@/hooks/useI18n';
 import { cn } from '@/lib/ui-styles';
+import { getRelativeImageUrl } from '@/utils/image';
+import { ImageOff } from 'lucide-react';
 
 export interface NoteDetailImageViewerProps {
   url: string;
@@ -20,6 +22,8 @@ export function NoteDetailImageViewer({
 }: NoteDetailImageViewerProps) {
   const { t } = useI18n();
   const [isZoomed, setIsZoomed] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const imageUrl = getRelativeImageUrl(url);
 
   return (
     <div 
@@ -40,7 +44,7 @@ export function NoteDetailImageViewer({
             {isZoomed ? t('notes.clickToFit') : t('notes.clickToZoom')}
           </span>
           <a 
-            href={url}
+            href={imageUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] font-bold text-zinc-400 hover:text-zinc-900 dark:text-zinc-550 dark:hover:text-zinc-200 uppercase tracking-widest hover:underline cursor-pointer select-none"
@@ -52,20 +56,34 @@ export function NoteDetailImageViewer({
       <div 
         className={cn(
           'w-full flex-1 flex items-center justify-center relative min-h-0 rounded-2xl',
-          isZoomed ? 'overflow-auto cursor-zoom-out' : 'overflow-hidden cursor-zoom-in'
+          hasError
+            ? 'border border-dashed border-zinc-200 dark:border-zinc-800'
+            : isZoomed
+            ? 'overflow-auto cursor-zoom-out'
+            : 'overflow-hidden cursor-zoom-in'
         )}
-        onClick={() => setIsZoomed(!isZoomed)}
+        onClick={() => !hasError && setIsZoomed(!isZoomed)}
       >
-        <img 
-          src={url} 
-          alt={title || t('notes.attachment')} 
-          className={cn(
-            'rounded-2xl border border-zinc-200/30 dark:border-zinc-800/30 shadow-sm transition-all duration-300',
-            isZoomed 
-              ? 'max-w-none max-h-none w-auto h-auto scale-100 object-none p-4' 
-              : 'w-full h-full object-contain'
-          )}
-        />
+        {hasError ? (
+          <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
+            <ImageOff className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              {t('common.error')}
+            </p>
+          </div>
+        ) : (
+          <img 
+            src={imageUrl} 
+            alt={title || t('notes.attachment')} 
+            onError={() => setHasError(true)}
+            className={cn(
+              'rounded-2xl border border-zinc-200/30 dark:border-zinc-800/30 shadow-sm transition-all duration-300',
+              isZoomed 
+                ? 'max-w-none max-h-none w-auto h-auto scale-100 object-none p-4' 
+                : 'w-full h-full object-contain'
+            )}
+          />
+        )}
         {isProcessing && (
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[1.5px] rounded-2xl flex flex-col items-center justify-center gap-3">
             <div className="w-8 h-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />

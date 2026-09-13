@@ -3,6 +3,7 @@
 import React from 'react';
 import { useI18n } from '@/hooks/useI18n';
 import { cn } from '@/lib/ui-styles';
+import { getRelativeImageUrl } from '@/utils/image';
 
 export interface NoteAttachmentCardProps {
   url: string;
@@ -12,6 +13,7 @@ export interface NoteAttachmentCardProps {
 
 export function NoteAttachmentCard({ url, className, size = 'md' }: NoteAttachmentCardProps) {
   const { t } = useI18n();
+  const fileUrl = getRelativeImageUrl(url);
   const fileName = url.split('/').pop() || t('notes.document');
 
   if (size === 'sm') {
@@ -32,7 +34,7 @@ export function NoteAttachmentCard({ url, className, size = 'md' }: NoteAttachme
           </div>
         </div>
         <a 
-          href={url} 
+          href={fileUrl} 
           target="_blank" 
           rel="noopener noreferrer"
           className="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs font-semibold text-white dark:text-zinc-900 shadow-sm shrink-0 cursor-pointer"
@@ -61,7 +63,7 @@ export function NoteAttachmentCard({ url, className, size = 'md' }: NoteAttachme
         </div>
       </div>
       <a 
-        href={url} 
+        href={fileUrl} 
         target="_blank" 
         rel="noopener noreferrer"
         className="px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-50 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-sm font-semibold text-white dark:text-zinc-900 shadow-sm shrink-0 cursor-pointer"

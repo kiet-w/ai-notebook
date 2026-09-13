@@ -8,6 +8,7 @@ import NoteDetailBody from '@/components/molecules/notes/NoteDetailBody';
 import NoteDetailFooter from '@/components/molecules/notes/NoteDetailFooter';
 import NoteDetailImageViewer from '@/components/molecules/notes/NoteDetailImageViewer';
 import { cn } from '@/lib/ui-styles';
+import { getRelativeImageUrl } from '@/utils/image';
 
 export interface NoteDetailModalProps {
   note: Note;
@@ -77,7 +78,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
         setImageAspectRatio(img.naturalHeight > img.naturalWidth ? 'portrait' : 'landscape');
       };
       img.onerror = () => setImageAspectRatio('portrait');
-      img.src = displayNote.url;
+      img.src = getRelativeImageUrl(displayNote.url);
     }
   }, [displayNote.url, isOpen]);
 

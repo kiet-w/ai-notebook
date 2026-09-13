@@ -133,15 +133,13 @@ describe('NotesController', () => {
 
       (service.createFromFile as jest.Mock).mockResolvedValue(mockNote);
 
-      const result = await controller.uploadFile(
-        mockFile,
-        undefined,
-        mockAuthReq,
-      );
+      const result = await controller.uploadFile(mockFile, {}, mockAuthReq);
 
       expect(jest.mocked(service.createFromFile)).toHaveBeenCalledWith(
         mockFile,
         'test-user-id',
+        undefined,
+        undefined,
         undefined,
       );
       expect(result.id).toBe('123');
@@ -152,7 +150,7 @@ describe('NotesController', () => {
       await expect(
         controller.uploadFile(
           undefined as unknown as Express.Multer.File,
-          undefined,
+          {},
           mockAuthReq,
         ),
       ).rejects.toThrow('No file uploaded');

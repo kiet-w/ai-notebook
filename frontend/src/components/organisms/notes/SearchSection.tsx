@@ -127,9 +127,10 @@ export default function SearchSection() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0 pt-0.5">
                     {note.category && (
-                      <Badge variant="outline" className="text-[10px] px-2 py-0.5">
-                        {getCategoryLabel(note.category, t)}
-                      </Badge>
+                      <Badge
+                        text={getCategoryLabel(note.category, t)}
+                        className="text-[10px] px-2 py-0.5"
+                      />
                     )}
                     <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
                   </div>

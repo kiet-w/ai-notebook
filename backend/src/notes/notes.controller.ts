@@ -18,10 +18,11 @@ import {
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
+import { UploadNoteDto } from './dto/upload-note.dto';
 import { NoteResponseDto } from './dto/note-response.dto';
 import { FindAllNotesQueryDto } from './dto/find-all-notes-query.dto';
 import { SearchNotesDto } from './dto/search-notes.dto';
-import { Note, Category } from '@prisma/client';
+import { Note } from '@prisma/client';
 import { extractBullets } from './utils/note.utils';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -63,14 +64,16 @@ export class NotesController {
         }),
     )
     file: Express.Multer.File,
-    @Body('category') category: Category | undefined,
+    @Body() uploadNoteDto: UploadNoteDto,
     @Req() req: AuthRequest,
   ): Promise<NoteResponseDto> {
     if (!file) throw new BadRequestException('No file uploaded');
     const note = await this.notesService.createFromFile(
       file,
       req.user.id,
-      category,
+      uploadNoteDto?.category,
+      uploadNoteDto?.title,
+      uploadNoteDto?.content,
     );
     return this.toResponseDto(note);
   }

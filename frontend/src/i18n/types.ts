@@ -118,6 +118,7 @@ export interface AuthTranslations {
 }
 
 export interface NotesTranslations {
+  titlePlaceholder?: string;
   importTitle: string;
   importSubtitle: string;
   thoughtPlaceholder: string;

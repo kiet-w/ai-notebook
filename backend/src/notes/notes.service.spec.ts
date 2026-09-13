@@ -136,4 +136,43 @@ describe('NotesService', () => {
       expect(result).toEqual(mockNotes);
     });
   });
+
+  describe('createFromFile', () => {
+    it('should create note from uploaded file with custom title and content', async () => {
+      const mockFile = {
+        originalname: 'screenshot.png',
+        buffer: Buffer.from('fake image content'),
+      } as Express.Multer.File;
+
+      const mockCreated = {
+        id: 'note-file-1',
+        aiTitle: 'Custom Screenshot Title',
+        content: 'Note description',
+        url: '/uploads/123-screenshot.png',
+        category: Category.WORK,
+        status: Status.COMPLETED,
+        userId: 'user-1',
+      };
+
+      (repository.create as jest.Mock).mockResolvedValue(mockCreated);
+
+      const result = await service.createFromFile(
+        mockFile,
+        'user-1',
+        Category.WORK,
+        'Custom Screenshot Title',
+        'Note description',
+      );
+
+      expect(jest.mocked(repository.create)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Custom Screenshot Title',
+          content: 'Note description',
+          category: Category.WORK,
+          userId: 'user-1',
+        }),
+      );
+      expect(result).toEqual(mockCreated);
+    });
+  });
 });

@@ -10,7 +10,7 @@ function buildCsp(isDev: boolean) {
       ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
       : "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
+    `img-src 'self' data: blob: https: ${apiUrl}`,
     "font-src 'self' data:",
     `connect-src 'self' ${apiUrl}`,
     "frame-ancestors 'none'",
@@ -57,6 +57,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|uploads|favicon.ico).*)',
   ],
 };

@@ -14,7 +14,7 @@ import NoteCategoryPicker from './NoteCategoryPicker';
 
 export interface NoteInputProps {
   onSubmit: (content: string, category?: Category, title?: string) => void;
-  onUpload?: (file: File, category?: Category) => void;
+  onUpload?: (file: File, category?: Category, title?: string, content?: string) => void;
   disabled?: boolean;
   showCategorySelector?: boolean;
   categories?: string[];
@@ -37,7 +37,12 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
   }, [categories, customCategories]);
 
   const previewUrl = useMemo(() => {
-    if (selectedFile && selectedFile.type.startsWith('image/')) {
+    if (
+      selectedFile &&
+      selectedFile.type.startsWith('image/') &&
+      typeof URL !== 'undefined' &&
+      typeof URL.createObjectURL === 'function'
+    ) {
       return URL.createObjectURL(selectedFile);
     }
     return null;
@@ -45,7 +50,13 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
 
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (
+        previewUrl &&
+        typeof URL !== 'undefined' &&
+        typeof URL.revokeObjectURL === 'function'
+      ) {
+        URL.revokeObjectURL(previewUrl);
+      }
     };
   }, [previewUrl]);
 
@@ -68,7 +79,12 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
     if (disabled || (!content.trim() && !selectedFile && !title.trim())) return;
 
     if (selectedFile && onUpload) {
-      onUpload(selectedFile, selectedCategory);
+      onUpload(
+        selectedFile,
+        selectedCategory,
+        title.trim() || undefined,
+        content.trim() || undefined,
+      );
       setSelectedFile(null);
     } else if (title.trim()) {
       onSubmit(content, selectedCategory, title.trim());
@@ -91,14 +107,26 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
     }
   };
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const files = e.clipboardData.files;
-    if (files && files.length > 0) {
-      const file = Array.from(files).find(f => f.type.startsWith('image/')) || files[0];
-      if (file && onUpload) {
-        e.preventDefault();
-        setSelectedFile(file);
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    let file: File | null = null;
+    const items = e.clipboardData.items;
+
+    if (items && items.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          file = items[i].getAsFile();
+          if (file) break;
+        }
       }
+    }
+
+    if (!file && e.clipboardData.files && e.clipboardData.files.length > 0) {
+      file = Array.from(e.clipboardData.files).find((f) => f.type.startsWith('image/')) || null;
+    }
+
+    if (file && onUpload) {
+      e.preventDefault();
+      setSelectedFile(file);
     }
   };
 
@@ -133,6 +161,7 @@ export function NoteInput({ onSubmit, onUpload, disabled, showCategorySelector, 
                 textareaRef.current?.focus();
               }
             }}
+            onPaste={handlePaste}
             placeholder={t('notes.titlePlaceholder')}
             aria-label={t('notes.titlePlaceholder')}
             disabled={disabled}

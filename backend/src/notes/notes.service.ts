@@ -109,19 +109,27 @@ export class NotesService {
     file: Express.Multer.File,
     userId: string,
     category?: Category,
+    title?: string,
+    content?: string,
   ): Promise<Note> {
     const filename = basename(file.originalname);
     const uploadsDir = join(process.cwd(), 'uploads');
     await fs.mkdir(uploadsDir, { recursive: true }).catch(() => {});
 
-    const fileUrl = `/uploads/${Date.now()}-${filename}`;
-    const filePath = join(uploadsDir, `${Date.now()}-${filename}`);
+    const timestamp = Date.now();
+    const storedFilename = `${timestamp}-${filename}`;
+    const fileUrl = `/uploads/${storedFilename}`;
+    const filePath = join(uploadsDir, storedFilename);
     await fs.writeFile(filePath, file.buffer);
 
+    const noteTitle = title?.trim() || filename;
+    const noteContent =
+      content?.trim() || `[Tập tin đính kèm: ${filename}](${fileUrl})`;
+
     const note = await this.repository.create({
-      title: filename,
-      content: `[Tập tin đính kèm: ${filename}](${fileUrl})`,
-      userInput: filename,
+      title: noteTitle,
+      content: noteContent,
+      userInput: content?.trim() || filename,
       url: fileUrl,
       category: category ?? Category.OTHER,
       status: Status.COMPLETED,

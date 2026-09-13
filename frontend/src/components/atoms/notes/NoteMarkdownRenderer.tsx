@@ -1,19 +1,45 @@
 import React from 'react';
+import { getRelativeImageUrl } from '@/utils/image';
 
 export interface NoteMarkdownRendererProps {
   content?: string | null;
   className?: string;
 }
 
-export function parseBoldText(text: string) {
-  const parts = text.split(/(\*\*.*?\*\*)/g);
+export function parseInlineMarkdown(text: string) {
+  const tokenRegex = /(\[.*?\]\(.*?\)|\*\*.*?\*\*)/g;
+  const parts = text.split(tokenRegex);
+
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
+      return (
+        <strong key={i} className="font-semibold text-foreground">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    const linkMatch = /^\[(.*?)\]\((.*?)\)$/.exec(part);
+    if (linkMatch) {
+      const linkText = linkMatch[1];
+      const rawHref = linkMatch[2];
+      const linkHref = getRelativeImageUrl(rawHref);
+      return (
+        <a
+          key={i}
+          href={linkHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-zinc-900 dark:text-zinc-100 underline decoration-zinc-400 hover:decoration-zinc-900 dark:decoration-zinc-600 dark:hover:decoration-zinc-100 font-medium break-all"
+        >
+          {linkText}
+        </a>
+      );
     }
     return part;
   });
 }
+
+export const parseBoldText = parseInlineMarkdown;
 
 export function NoteMarkdownRenderer({ content, className }: NoteMarkdownRendererProps) {
   if (!content) return null;
