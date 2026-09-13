@@ -146,22 +146,22 @@ export function NoteCategoryPicker({
         </button>
       )}
 
-      {/* Popover Dropdown Panel */}
+      {/* Popover Dropdown Panel (Horizontal Layout) */}
       {isOpen && (
         <div
           role="dialog"
           aria-label={t('notes.categories') || 'Danh mục'}
           className={cn(
-            'absolute z-50 min-w-[200px] max-w-[260px] p-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl dark:shadow-2xl animate-in fade-in zoom-in-95 duration-150',
+            'absolute z-50 w-max max-w-[calc(100vw-2.5rem)] sm:max-w-md p-2.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl dark:shadow-2xl animate-in fade-in zoom-in-95 duration-150',
             align === 'right' ? 'right-0' : 'left-0',
             'top-full mt-1.5'
           )}
         >
-          <div className="px-2 py-1 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+          <div className="px-1 pb-1.5 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
             {t('notes.categories') || 'Danh mục'}
           </div>
 
-          <div className="max-h-56 overflow-y-auto space-y-0.5 py-1 scrollbar-thin">
+          <div className="flex flex-wrap items-center gap-1.5 max-h-48 overflow-y-auto p-0.5 scrollbar-thin">
             {categories.map((catId) => {
               const label = getCategoryLabel(catId, t);
               const emoji = getCategoryEmoji(catId);
@@ -176,77 +176,72 @@ export function NoteCategoryPicker({
                     setIsOpen(false);
                   }}
                   className={cn(
-                    'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer text-left',
+                    'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border cursor-pointer select-none',
                     isSelected
-                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                      : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                      ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100 shadow-xs'
+                      : 'bg-zinc-100/80 text-zinc-700 border-zinc-200/70 hover:bg-zinc-200/80 hover:text-zinc-900 dark:bg-zinc-800/60 dark:text-zinc-300 dark:border-zinc-700/60 dark:hover:bg-zinc-700/80'
                   )}
                 >
-                  <span className="flex items-center gap-2 truncate">
-                    <span>{emoji}</span>
-                    <span className="truncate">{label}</span>
-                  </span>
-                  {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  <span>{emoji}</span>
+                  <span>{label}</span>
+                  {isSelected && <Check className="w-3 h-3 ml-0.5 shrink-0" />}
                 </button>
               );
             })}
-          </div>
 
-          {/* Divider */}
-          <div className="border-t border-zinc-100 dark:border-zinc-800 my-1" />
-
-          {/* Add Custom Category */}
-          {isAdding ? (
-            <div className="flex items-center gap-1 p-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
-              <input
-                ref={inputRef}
-                type="text"
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddCategory();
-                  }
-                  if (e.key === 'Escape') {
+            {/* Inline Add Custom Category in horizontal flow */}
+            {isAdding ? (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 shadow-xs">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCategory();
+                    }
+                    if (e.key === 'Escape') {
+                      setIsAdding(false);
+                      setNewCatName('');
+                    }
+                  }}
+                  placeholder={t('notes.newCategory') || 'Tên...'}
+                  className="w-20 text-xs px-1 py-0.5 bg-transparent focus:outline-none dark:text-zinc-100 placeholder:text-zinc-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCategory}
+                  disabled={!newCatName.trim()}
+                  className="p-0.5 rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 disabled:opacity-30 cursor-pointer"
+                  title={t('common.save')}
+                >
+                  <Check className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
                     setIsAdding(false);
                     setNewCatName('');
-                  }
-                }}
-                placeholder={t('notes.newCategory') || 'Tên danh mục...'}
-                className="flex-1 min-w-0 text-xs px-2 py-1 bg-transparent focus:outline-none dark:text-zinc-100 placeholder:text-zinc-400"
-              />
+                  }}
+                  className="p-0.5 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                  title={t('common.cancel')}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={handleAddCategory}
-                disabled={!newCatName.trim()}
-                className="p-1 rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 disabled:opacity-30 cursor-pointer"
-                title={t('common.save')}
+                onClick={() => setIsAdding(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3" />
+                <span>{t('notes.addCategory') || 'Thêm'}</span>
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAdding(false);
-                  setNewCatName('');
-                }}
-                className="p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
-                title={t('common.cancel')}
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsAdding(true)}
-              className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{t('notes.addCategory') || 'Thêm danh mục'}</span>
-            </button>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
