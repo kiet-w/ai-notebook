@@ -1,11 +1,10 @@
-import { IsOptional, IsEnum, IsInt, Min, Max, IsString } from 'class-validator';
+import { IsOptional, IsInt, Min, Max, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Category } from '@prisma/client';
 
 export class FindAllNotesQueryDto {
   @IsOptional()
-  @IsEnum(Category)
-  category?: Category;
+  @IsString()
+  category?: string;
 
   @IsOptional()
   @Type(() => Number)

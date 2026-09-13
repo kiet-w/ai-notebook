@@ -9,31 +9,42 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Category {
-  COOKING
-  TECH
-  LEARNING
-  WORK
-  FINANCE
-  OTHER
-}
-
 enum Status {
   PROCESSING
   COMPLETED
   FAILED
 }
 
-model Note {
+model Category {
   id        String   @id @default(uuid())
-  url       String?  @db.Text
-  userInput String?  @map("user_input") @db.Text
-  content   String?  @db.Text
-  category  Category @default(OTHER)
-  status    Status   @default(PROCESSING)
-  isRead    Boolean  @default(false) @map("is_read")
+  name      String   @db.Text
+  key       String?  @db.Text
+  emoji     String?  @default("📁") @db.Text
+  isDefault Boolean  @default(false) @map("is_default")
+
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  notes     Note[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Note {
+  id         String    @id @default(uuid())
+  url        String?   @db.Text
+  userInput  String?   @map("user_input") @db.Text
+  content    String?   @db.Text
+  categoryId String?   @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  status     Status    @default(PROCESSING)
+  isRead     Boolean   @default(false) @map("is_read")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id])
@@ -46,6 +57,7 @@ model Note {
   // ponytail: removed redundant @id indexes and invalid B-Tree indexes on TEXT/JSON
   @@index([createdAt])
   @@index([status])
+  @@index([categoryId])
 }
 
 model User {
@@ -59,6 +71,7 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   notes         Note[]
+  categories    Category[]
   refreshTokens RefreshToken[]
 }
 

@@ -1,4 +1,4 @@
-import { Category, Status } from '@prisma/client';
+import { Status } from '@prisma/client';
 
 export class NoteResponseDto {
   id!: string;
@@ -9,7 +9,8 @@ export class NoteResponseDto {
   aiSummary!: string | null;
   aiBullets!: string[] | null;
   content!: string | null;
-  category!: Category;
+  category!: string | null;
+  categoryId!: string | null;
   status!: Status;
   isRead!: boolean;
   createdAt!: Date;

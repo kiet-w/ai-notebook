@@ -1,4 +1,4 @@
-import { PrismaClient, Category, Status } from '@prisma/client';
+import { PrismaClient, Status } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import 'dotenv/config';
@@ -8,6 +8,26 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  const defaultCategories = [
+    { name: 'Cooking', key: 'cooking', emoji: '🍳', isDefault: true },
+    { name: 'Tech', key: 'tech', emoji: '💻', isDefault: true },
+    { name: 'Learning', key: 'learning', emoji: '📚', isDefault: true },
+    { name: 'Work', key: 'work', emoji: '💼', isDefault: true },
+    { name: 'Finance', key: 'finance', emoji: '💰', isDefault: true },
+    { name: 'Other', key: 'other', emoji: '📝', isDefault: true },
+  ];
+
+  const categoryMap: Record<string, string> = {};
+
+  for (const cat of defaultCategories) {
+    const upserted = await prisma.category.upsert({
+      where: { userId_name: { userId: null as unknown as string, name: cat.name } },
+      update: {},
+      create: cat,
+    });
+    categoryMap[cat.name] = upserted.id;
+  }
+
   const notes = [
     {
       url: 'https://example.com/tech-note',
@@ -19,7 +39,7 @@ async function main() {
         'Use explicit contracts between frontend and backend.',
         'Validate data at API boundaries.',
       ],
-      category: Category.TECH,
+      categoryId: categoryMap['Tech'],
       status: Status.COMPLETED,
     },
     {
@@ -31,7 +51,7 @@ async function main() {
         'Direct URLs are simplest for local Prisma migrate.',
         'Pooler URLs are useful for serverless or high-connection environments.',
       ],
-      category: Category.LEARNING,
+      categoryId: categoryMap['Learning'],
       status: Status.COMPLETED,
     },
     {
@@ -40,7 +60,7 @@ async function main() {
       aiTitle: 'Quarterly Budget Review',
       aiSummary: 'A finance task for reviewing recurring subscriptions and tool costs.',
       aiBullets: ['List recurring tools.', 'Flag unused subscriptions.', 'Estimate next quarter spend.'],
-      category: Category.FINANCE,
+      categoryId: categoryMap['Finance'],
       status: Status.COMPLETED,
     },
   ];
@@ -51,7 +71,7 @@ async function main() {
     await prisma.note.create({ data: note });
   }
 
-  console.log(`Seeded ${notes.length} notes.`);
+  console.log(`Seeded ${notes.length} notes and ${defaultCategories.length} categories.`);
 }
 
 main()

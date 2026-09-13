@@ -2,12 +2,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotesService } from './notes.service';
 import { NotesRepository } from './repositories/notes.repository';
+import { CategoriesService } from '../categories/categories.service';
 import { Category, Status } from '@prisma/client';
 import { BadRequestException } from '@nestjs/common';
 
 describe('NotesService', () => {
   let service: NotesService;
   let repository: NotesRepository;
+  let categoriesService: CategoriesService;
+
+  const mockCategory = {
+    id: 'cat-other',
+    name: 'Other',
+    key: 'other',
+    emoji: '📝',
+    isDefault: true,
+    userId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,15 +38,39 @@ describe('NotesService', () => {
             getUnreadCounts: jest.fn(),
           },
         },
+        {
+          provide: CategoriesService,
+          useValue: {
+            resolveCategoryForNote: jest
+              .fn()
+              .mockImplementation(
+                (userId: string, cat?: string, catId?: string) => {
+                  const mockCat: Category = {
+                    id: catId || (cat === 'Tech' ? 'cat-tech' : 'cat-other'),
+                    name: cat || 'Other',
+                    emoji: cat === 'Tech' ? '💻' : '📝',
+                    key: (cat || 'other').toLowerCase(),
+                    isDefault: true,
+                    userId: null,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                  };
+                  return Promise.resolve(mockCat);
+                },
+              ),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<NotesService>(NotesService);
     repository = module.get<NotesRepository>(NotesRepository);
+    categoriesService = module.get<CategoriesService>(CategoriesService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+    expect(categoriesService).toBeDefined();
   });
 
   describe('create', () => {
@@ -52,7 +89,8 @@ describe('NotesService', () => {
         aiTitle: 'My first note',
         aiSummary: null,
         aiBullets: null,
-        category: Category.OTHER,
+        category: mockCategory,
+        categoryId: 'cat-other',
         status: Status.COMPLETED,
         isRead: false,
         userId: 'user-1',
@@ -79,6 +117,11 @@ describe('NotesService', () => {
     });
 
     it('should use explicitly provided title when available', async () => {
+      const mockTechCategory = {
+        ...mockCategory,
+        id: 'cat-tech',
+        name: 'Tech',
+      };
       const mockCreatedNote = {
         id: 'note-2',
         url: null,
@@ -87,7 +130,8 @@ describe('NotesService', () => {
         aiTitle: 'Custom Title',
         aiSummary: null,
         aiBullets: null,
-        category: Category.TECH,
+        category: mockTechCategory,
+        categoryId: 'cat-tech',
         status: Status.COMPLETED,
         isRead: false,
         userId: 'user-1',
@@ -101,7 +145,7 @@ describe('NotesService', () => {
         {
           title: 'Custom Title',
           userInput: 'Details here',
-          category: Category.TECH,
+          category: 'Tech',
         },
         'user-1',
       );
@@ -109,7 +153,7 @@ describe('NotesService', () => {
       expect(jest.mocked(repository.create)).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Custom Title',
-          category: Category.TECH,
+          categoryId: 'cat-tech',
           status: Status.COMPLETED,
         }),
       );
@@ -144,12 +188,19 @@ describe('NotesService', () => {
         buffer: Buffer.from('fake image content'),
       } as Express.Multer.File;
 
+      const mockWorkCategory = {
+        ...mockCategory,
+        id: 'cat-work',
+        name: 'Work',
+      };
+
       const mockCreated = {
         id: 'note-file-1',
         aiTitle: 'Custom Screenshot Title',
         content: 'Note description',
         url: '/uploads/123-screenshot.png',
-        category: Category.WORK,
+        category: mockWorkCategory,
+        categoryId: 'cat-work',
         status: Status.COMPLETED,
         userId: 'user-1',
       };
@@ -159,7 +210,7 @@ describe('NotesService', () => {
       const result = await service.createFromFile(
         mockFile,
         'user-1',
-        Category.WORK,
+        'Work',
         'Custom Screenshot Title',
         'Note description',
       );
@@ -168,7 +219,6 @@ describe('NotesService', () => {
         expect.objectContaining({
           title: 'Custom Screenshot Title',
           content: 'Note description',
-          category: Category.WORK,
           userId: 'user-1',
         }),
       );

@@ -1,11 +1,12 @@
-import { Category, Status } from '@prisma/client';
+import { Status } from '@prisma/client';
 
 export interface NoteUpdatedEvent {
   id: string;
   userId: string | null;
   status: Extract<Status, 'COMPLETED' | 'FAILED'>;
   aiTitle: string | null;
-  category: Category;
+  category: string | null;
+  categoryId?: string | null;
   aiSummary: string | null;
   aiBullets: string[] | null;
   content: string | null;

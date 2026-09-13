@@ -54,7 +54,8 @@ describe('NotesController', () => {
         aiSummary: null,
         aiBullets: null,
         content: 'Hello',
-        category: 'OTHER' as const,
+        category: { id: 'cat-1', name: 'Other' },
+        categoryId: 'cat-1',
         status: 'COMPLETED' as const,
         isRead: false,
         createdAt: new Date(),
@@ -71,6 +72,7 @@ describe('NotesController', () => {
       );
       expect(result.id).toBe('123');
       expect(result.title).toBe('Hello');
+      expect(result.category).toBe('Other');
       expect(result.status).toBe('COMPLETED');
     });
   });
@@ -85,7 +87,8 @@ describe('NotesController', () => {
         aiSummary: null,
         aiBullets: null,
         content: 'Note with query',
-        category: 'OTHER' as const,
+        category: { id: 'cat-1', name: 'Other' },
+        categoryId: 'cat-1',
         status: 'COMPLETED' as const,
         isRead: false,
         createdAt: new Date(),
@@ -102,6 +105,7 @@ describe('NotesController', () => {
       );
       expect(result.notes).toHaveLength(1);
       expect(result.notes[0].id).toBe('123');
+      expect(result.notes[0].category).toBe('Other');
     });
   });
 
@@ -124,7 +128,8 @@ describe('NotesController', () => {
         aiSummary: null,
         aiBullets: null,
         content: 'Tập tin đính kèm: test.pdf',
-        category: 'OTHER' as const,
+        category: { id: 'cat-1', name: 'Other' },
+        categoryId: 'cat-1',
         status: 'COMPLETED' as const,
         isRead: false,
         createdAt: new Date(),
@@ -141,8 +146,10 @@ describe('NotesController', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
       );
       expect(result.id).toBe('123');
+      expect(result.category).toBe('Other');
       expect(result.status).toBe('COMPLETED');
     });
 

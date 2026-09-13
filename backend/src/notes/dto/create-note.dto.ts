@@ -1,6 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, IsUrl, IsEnum } from 'class-validator';
-import { Category } from '@prisma/client';
+import { IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class CreateNoteDto {
   @Transform(({ value }: { value: unknown }) =>
@@ -31,7 +30,17 @@ export class CreateNoteDto {
   @IsString()
   userInput?: string;
 
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
   @IsOptional()
-  @IsEnum(Category)
-  category?: Category;
+  @IsString()
+  category?: string;
+
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
 }

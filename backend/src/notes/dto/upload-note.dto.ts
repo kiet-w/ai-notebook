@@ -1,10 +1,13 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { Category } from '@prisma/client';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UploadNoteDto {
   @IsOptional()
-  @IsEnum(Category)
-  category?: Category;
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
 
   @IsOptional()
   @IsString()

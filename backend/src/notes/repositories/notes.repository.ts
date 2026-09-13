@@ -3,9 +3,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Note, Prisma, Status, Category } from '@prisma/client';
 import { BaseRepository } from '../../common/repositories/base.repository';
 
+export type NoteWithCategory = Note & {
+  category?: Category | null;
+};
+
 @Injectable()
 export class NotesRepository extends BaseRepository<
-  Note,
+  NoteWithCategory,
   Prisma.NoteCreateInput,
   Prisma.NoteUpdateInput
 > {
@@ -13,83 +17,110 @@ export class NotesRepository extends BaseRepository<
     super(prisma.note);
   }
 
-  async create(data: {
+  override async create(data: {
     title?: string;
     content?: string;
     url?: string;
     userInput?: string;
-    category?: Category;
+    categoryId?: string;
     status?: Status;
     userId: string;
-  }): Promise<Note> {
-    return super.create({
-      url: data.url,
-      userInput: data.userInput,
-      content: data.content ?? data.userInput,
-      aiTitle: data.title,
-      category: data.category ?? Category.OTHER,
-      status: data.status ?? Status.COMPLETED,
-      user: { connect: { id: data.userId } },
+  }): Promise<NoteWithCategory> {
+    return this.prisma.note.create({
+      data: {
+        url: data.url,
+        userInput: data.userInput,
+        content: data.content ?? data.userInput,
+        aiTitle: data.title,
+        status: data.status ?? Status.COMPLETED,
+        user: { connect: { id: data.userId } },
+        ...(data.categoryId
+          ? { category: { connect: { id: data.categoryId } } }
+          : {}),
+      },
+      include: { category: true },
     });
   }
 
-  async findAll(params: {
+  override async findById(id: string): Promise<NoteWithCategory | null> {
+    return this.prisma.note.findUnique({
+      where: { id },
+      include: { category: true },
+    });
+  }
+
+  override async update(
+    id: string,
+    data: Prisma.NoteUpdateInput,
+  ): Promise<NoteWithCategory> {
+    return this.prisma.note.update({
+      where: { id },
+      data,
+      include: { category: true },
+    });
+  }
+
+  override async findAll(params: {
     userId: string;
-    category?: Category;
+    category?: string;
     limit?: number;
     cursor?: string;
-    selectFullFields?: boolean;
-  }): Promise<Note[]> {
+  }): Promise<NoteWithCategory[]> {
     const where: Prisma.NoteWhereInput = { userId: params.userId };
-    if (params.category) where.category = params.category;
+    if (params.category) {
+      const cat = params.category.trim();
+      where.OR = [
+        { categoryId: cat },
+        { category: { name: { equals: cat, mode: 'insensitive' as const } } },
+        {
+          category: {
+            key: { equals: cat.toLowerCase(), mode: 'insensitive' as const },
+          },
+        },
+      ];
+    }
     const limit = params.limit ?? 25;
     const queryParams: Prisma.NoteFindManyArgs = {
       where,
       orderBy: { createdAt: 'desc' },
       take: limit,
+      include: { category: true },
     };
-
-    if (!params.selectFullFields) {
-      queryParams.select = {
-        id: true,
-        url: true,
-        userInput: true,
-        content: true,
-        aiTitle: true,
-        aiSummary: true,
-        category: true,
-        status: true,
-        isRead: true,
-        createdAt: true,
-      };
-    }
 
     if (params.cursor) {
       queryParams.cursor = { id: params.cursor };
       queryParams.skip = 1;
     }
 
-    return super.findAll(queryParams);
+    return this.prisma.note.findMany(queryParams);
   }
 
-  async getUnreadCounts(userId: string): Promise<Record<Category, number>> {
-    const counts = await this.prisma.note.groupBy({
-      by: ['category'],
+  async getUnreadCounts(userId: string): Promise<Record<string, number>> {
+    const notes = await this.prisma.note.findMany({
       where: { isRead: false, userId },
-      _count: { _all: true },
+      select: {
+        category: {
+          select: { name: true },
+        },
+      },
     });
-    const result = {} as Record<Category, number>;
-    counts.forEach((c) => {
-      result[c.category] = c._count._all;
-    });
+    const result: Record<string, number> = {};
+    for (const note of notes) {
+      const catName = note.category?.name || 'Other';
+      result[catName] = (result[catName] || 0) + 1;
+    }
     return result;
   }
 
-  async updateStatus(id: string, status: Status): Promise<Note> {
-    return super.update(id, { status });
+  async updateStatus(id: string, status: Status): Promise<NoteWithCategory> {
+    return this.update(id, { status });
   }
 
-  async search(userId: string, query: string, limit = 20): Promise<Note[]> {
+  async search(
+    userId: string,
+    query: string,
+    limit = 20,
+  ): Promise<NoteWithCategory[]> {
     const trimmed = query.trim();
     if (!trimmed) return [];
     return this.prisma.note.findMany({
@@ -101,6 +132,7 @@ export class NotesRepository extends BaseRepository<
           { userInput: { contains: trimmed, mode: 'insensitive' } },
         ],
       },
+      include: { category: true },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });

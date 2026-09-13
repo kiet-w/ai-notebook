@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { CategoriesModule } from './categories/categories.module';
 import { NotesModule } from './notes/notes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { LoggerModule } from 'nestjs-pino';
@@ -95,6 +96,7 @@ const isProduction = process.env.NODE_ENV === 'production';
       },
     }),
     PrismaModule,
+    CategoriesModule,
     NotesModule,
     UserModule,
   ],

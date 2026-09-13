@@ -22,7 +22,7 @@ import { UploadNoteDto } from './dto/upload-note.dto';
 import { NoteResponseDto } from './dto/note-response.dto';
 import { FindAllNotesQueryDto } from './dto/find-all-notes-query.dto';
 import { SearchNotesDto } from './dto/search-notes.dto';
-import { Note } from '@prisma/client';
+import { NoteWithCategory } from './repositories/notes.repository';
 import { extractBullets } from './utils/note.utils';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -74,6 +74,7 @@ export class NotesController {
       uploadNoteDto?.category,
       uploadNoteDto?.title,
       uploadNoteDto?.content,
+      uploadNoteDto?.categoryId,
     );
     return this.toResponseDto(note);
   }
@@ -131,7 +132,7 @@ export class NotesController {
     return this.toResponseDto(note);
   }
 
-  private toResponseDto(note: Note): NoteResponseDto {
+  private toResponseDto(note: NoteWithCategory): NoteResponseDto {
     let url = note.url;
     if (url && url.startsWith('/uploads/')) {
       const baseUrl =
@@ -149,7 +150,8 @@ export class NotesController {
       aiSummary: note.aiSummary,
       aiBullets: extractBullets(note.aiBullets),
       content: note.content,
-      category: note.category,
+      category: note.category?.name || 'Other',
+      categoryId: note.categoryId ?? null,
       status: note.status,
       isRead: note.isRead,
       createdAt: note.createdAt,
