@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import { IsOptional, IsString, IsUrl } from 'class-validator';
+import { RequireAtLeastOne } from '../validators/at-least-one-field.validator';
 
 export class CreateNoteDto {
   @Transform(({ value }: { value: unknown }) =>
@@ -14,6 +15,7 @@ export class CreateNoteDto {
   )
   @IsOptional()
   @IsString()
+  @RequireAtLeastOne(['url', 'content', 'userInput'])
   content?: string;
 
   @Transform(({ value }: { value: unknown }) =>

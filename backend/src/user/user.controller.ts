@@ -17,6 +17,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
+import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
@@ -34,7 +35,10 @@ interface AuthRequest extends Request {
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly authService: AuthService,
+  ) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -44,10 +48,11 @@ export class UserController {
     @Headers('user-agent') subAgent: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.userService.register(dto, ip, subAgent);
+    const result = await this.authService.register(dto, ip, subAgent);
     setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken };
   }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -56,10 +61,11 @@ export class UserController {
     @Headers('user-agent') subAgent: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.userService.login(dto, ip, subAgent);
+    const result = await this.authService.login(dto, ip, subAgent);
     setRefreshTokenCookie(res, result.refreshToken);
     return { accessToken: result.accessToken };
   }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -72,7 +78,7 @@ export class UserController {
     if (!refreshToken)
       throw new UnauthorizedException('Không tìm thấy Refresh Token');
     try {
-      const result = await this.userService.refresh(
+      const result = await this.authService.refresh(
         refreshToken,
         ip,
         userAgent,
@@ -90,11 +96,12 @@ export class UserController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies['refreshToken'] as string | undefined;
     if (refreshToken) {
-      await this.userService.logout(refreshToken);
+      await this.authService.logout(refreshToken);
     }
     clearRefreshTokenCookie(res);
     return { message: 'Logged out successfully' };
   }
+
   @Get()
   @UseGuards(JwtAuthGuard)
   findAll(@Req() req: AuthRequest): Promise<ResponseUserDto[]> {

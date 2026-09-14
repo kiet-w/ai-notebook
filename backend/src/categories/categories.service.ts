@@ -1,8 +1,6 @@
 import {
   Injectable,
   OnModuleInit,
-  NotFoundException,
-  ForbiddenException,
   ConflictException,
   Logger,
 } from '@nestjs/common';
@@ -11,6 +9,8 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from '@prisma/client';
 import { DEFAULT_CATEGORIES } from './constants/default-categories';
+import { formatCategoryEmoji, slugifyCategoryKey } from './utils/category.util';
+import { ensureCategoryCanBeModified } from './policies/category.policy';
 
 @Injectable()
 export class CategoriesService implements OnModuleInit {
@@ -62,8 +62,8 @@ export class CategoriesService implements OnModuleInit {
 
     return this.repository.create({
       name: trimmedName,
-      key: trimmedName.toLowerCase().replace(/\s+/g, '-'),
-      emoji: dto.emoji?.trim() || '📁',
+      key: slugifyCategoryKey(trimmedName),
+      emoji: formatCategoryEmoji(dto.emoji),
       isDefault: false,
       user: { connect: { id: userId } },
     });
@@ -75,15 +75,7 @@ export class CategoriesService implements OnModuleInit {
     dto: UpdateCategoryDto,
   ): Promise<Category> {
     const category = await this.repository.findById(id);
-    if (!category) {
-      throw new NotFoundException(`Category with ID "${id}" not found`);
-    }
-
-    if (category.isDefault || category.userId !== userId) {
-      throw new ForbiddenException(
-        'You cannot modify default categories or categories belonging to another user',
-      );
-    }
+    ensureCategoryCanBeModified(category, userId, id, 'modify');
 
     const dataToUpdate: { name?: string; emoji?: string; key?: string } = {};
 
@@ -101,11 +93,11 @@ export class CategoriesService implements OnModuleInit {
         }
       }
       dataToUpdate.name = trimmedName;
-      dataToUpdate.key = trimmedName.toLowerCase().replace(/\s+/g, '-');
+      dataToUpdate.key = slugifyCategoryKey(trimmedName);
     }
 
     if (dto.emoji !== undefined) {
-      dataToUpdate.emoji = dto.emoji.trim() || '📁';
+      dataToUpdate.emoji = formatCategoryEmoji(dto.emoji);
     }
 
     return this.repository.update(id, dataToUpdate);
@@ -113,15 +105,7 @@ export class CategoriesService implements OnModuleInit {
 
   async delete(userId: string, id: string): Promise<Category> {
     const category = await this.repository.findById(id);
-    if (!category) {
-      throw new NotFoundException(`Category with ID "${id}" not found`);
-    }
-
-    if (category.isDefault || category.userId !== userId) {
-      throw new ForbiddenException(
-        'You cannot delete default categories or categories belonging to another user',
-      );
-    }
+    ensureCategoryCanBeModified(category, userId, id, 'delete');
 
     return this.repository.delete(id);
   }
@@ -148,7 +132,7 @@ export class CategoriesService implements OnModuleInit {
       try {
         return await this.repository.create({
           name: trimmed.charAt(0).toUpperCase() + trimmed.slice(1),
-          key: trimmed.toLowerCase().replace(/\s+/g, '-'),
+          key: slugifyCategoryKey(trimmed),
           emoji: '📁',
           isDefault: false,
           user: { connect: { id: userId } },

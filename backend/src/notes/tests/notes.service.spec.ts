@@ -347,31 +347,7 @@ describe('NotesService', () => {
   });
 
   describe('search', () => {
-    it('should call repository.search with userId and query, returning { notes: NoteResponseDto[] }', async () => {
-      const mockNotes = [
-        {
-          id: 'note-1',
-          content: 'test content',
-          aiTitle: 'test title',
-          category: mockCategory,
-          status: Status.COMPLETED,
-          isRead: false,
-          userId: 'user-1',
-          createdAt: new Date(),
-        },
-      ];
-      (repository.search as jest.Mock).mockResolvedValue(mockNotes);
-
-      const result = await service.search('keyword', 'user-1');
-      expect(jest.mocked(repository.search)).toHaveBeenCalledWith(
-        'user-1',
-        'keyword',
-      );
-      expect(result.notes).toHaveLength(1);
-      expect(result.notes[0].id).toBe('note-1');
-    });
-
-    it('should accept SearchNotesDto object', async () => {
+    it('should accept SearchNotesDto object and call repository.search', async () => {
       const mockNotes = [
         {
           id: 'note-1',
@@ -392,6 +368,7 @@ describe('NotesService', () => {
         'keyword',
       );
       expect(result.notes).toHaveLength(1);
+      expect(result.notes[0].id).toBe('note-1');
     });
   });
 
@@ -452,38 +429,6 @@ describe('NotesService', () => {
       );
       expect(result.id).toBe('note-file-1');
       expect(result.category).toBe('Work');
-    });
-
-    it('should support legacy positional arguments', async () => {
-      const mockFile = {
-        originalname: 'screenshot.png',
-        buffer: Buffer.from('fake image content'),
-      } as Express.Multer.File;
-
-      const mockCreated = {
-        id: 'note-file-2',
-        aiTitle: 'Custom Screenshot Title',
-        content: 'Note description',
-        url: '/uploads/123-screenshot.png',
-        category: mockCategory,
-        categoryId: 'cat-other',
-        status: Status.COMPLETED,
-        userId: 'user-1',
-        isRead: false,
-        createdAt: new Date(),
-      };
-
-      (repository.create as jest.Mock).mockResolvedValue(mockCreated);
-
-      const result = await service.createFromFile(
-        mockFile,
-        'user-1',
-        'Work',
-        'Custom Screenshot Title',
-        'Note description',
-      );
-
-      expect(result.id).toBe('note-file-2');
     });
 
     it('should integrate parsed markdown into note content when DocumentParserService succeeds', async () => {

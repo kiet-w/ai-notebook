@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import {
   NotesRepository,
   NoteWithCategory,
@@ -18,13 +13,21 @@ import { Category, Status } from '@prisma/client';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { NoteUpdatedEvent } from './types/sse-event.type';
-import { extractBullets } from './utils/note.utils';
 import { CategoriesService } from '../categories/categories.service';
 import { StorageService } from '../storage/storage.service';
 import { EventsService } from '../events/events.service';
 import { DocumentParserService } from '../parser/parser.service';
 import { ScraperService } from '../scraper/scraper.service';
-import { randomUUID } from 'crypto';
+import {
+  buildFileNoteContent,
+  deriveNoteTitle,
+  mergeScrapedContent,
+} from './utils/note-content.util';
+import {
+  createNoteUpdatedDomainEvent,
+  mapDomainEventToSseEvent,
+} from './utils/note-event.util';
+import { ensureNoteOwnership } from './policies/note.policy';
 
 @Injectable()
 export class NotesService {
@@ -40,24 +43,9 @@ export class NotesService {
   ) {}
 
   getEventStream(): Observable<NoteUpdatedEvent> {
-    return this.eventsService.subscribe(undefined, 'note.updated').pipe(
-      map((event) => {
-        const p = event.payload;
-        return {
-          id: p.id,
-          userId: event.userId ?? null,
-          status: p.status,
-          aiTitle: p.aiTitle ?? null,
-          category: p.category ?? 'Other',
-          categoryId: p.categoryId ?? null,
-          aiSummary: p.aiSummary ?? null,
-          aiBullets: p.aiBullets ?? null,
-          content: p.content ?? null,
-          isRead: p.isRead ?? false,
-          createdAt: event.timestamp,
-        };
-      }),
-    );
+    return this.eventsService
+      .subscribe(undefined, 'note.updated')
+      .pipe(map((event) => mapDomainEventToSseEvent(event)));
   }
 
   async create(
@@ -74,8 +62,8 @@ export class NotesService {
       );
     }
 
-    let content = rawContent || url || '';
     let scrapedTitle: string | undefined;
+    let scrapedContent: string | undefined;
 
     if (url) {
       try {
@@ -84,9 +72,7 @@ export class NotesService {
           scrapedTitle = scraped.title;
         }
         if (scraped.content && scraped.content.length > 0) {
-          content = rawContent
-            ? `${rawContent}\n\n${scraped.content}`
-            : scraped.content;
+          scrapedContent = scraped.content;
         }
       } catch (err) {
         this.logger.warn(
@@ -97,11 +83,17 @@ export class NotesService {
       }
     }
 
-    let title = createNoteDto.title?.trim() || scrapedTitle;
-    if (!title) {
-      const firstLine = content.split('\n')[0]?.trim();
-      title = firstLine ? firstLine.slice(0, 80) : 'Untitled';
-    }
+    const content = mergeScrapedContent({
+      rawContent,
+      scrapedContent,
+      url,
+    });
+
+    const title = deriveNoteTitle({
+      inputTitle: createNoteDto.title,
+      scrapedTitle,
+      content,
+    });
 
     const resolvedCategory: Category | null =
       await this.categoriesService.resolveCategoryForNote(
@@ -125,27 +117,14 @@ export class NotesService {
   }
 
   async findAll(
-    queryOrParams:
-      | FindAllNotesQueryDto
-      | {
-          userId: string;
-          category?: string;
-          limit?: number;
-          cursor?: string;
-        } = {},
-    userId?: string,
+    query: FindAllNotesQueryDto,
+    userId: string,
   ): Promise<NoteResponseDto[]> {
-    const resolvedUserId =
-      userId ??
-      ('userId' in queryOrParams && queryOrParams.userId
-        ? queryOrParams.userId
-        : '');
-
     const notes = await this.repository.findAll({
-      userId: resolvedUserId,
-      category: queryOrParams.category,
-      limit: queryOrParams.limit,
-      cursor: queryOrParams.cursor,
+      userId,
+      category: query.category,
+      limit: query.limit,
+      cursor: query.cursor,
     });
     return NoteMapper.toResponseDtoList(notes);
   }
@@ -156,40 +135,14 @@ export class NotesService {
 
   async findOne(id: string, userId: string): Promise<NoteResponseDto> {
     const note = await this.repository.findById(id);
-    if (!note || note.userId !== userId) {
-      throw new NotFoundException(`Note with ID ${id} not found`);
-    }
+    ensureNoteOwnership(note, userId, id);
     return NoteMapper.toResponseDto(note);
-  }
-
-  private safeEmitNoteUpdated(note: NoteWithCategory): void {
-    const aiBullets = extractBullets(note.aiBullets);
-
-    this.eventsService.emit({
-      id: randomUUID(),
-      type: 'note.updated',
-      aggregateId: note.id,
-      userId: note.userId || undefined,
-      timestamp: note.createdAt || new Date(),
-      payload: {
-        id: note.id,
-        status: note.status as 'COMPLETED' | 'FAILED',
-        aiTitle: note.aiTitle,
-        category: note.category?.name || 'Other',
-        categoryId: note.categoryId,
-        aiSummary: note.aiSummary,
-        aiBullets,
-        content: note.content,
-        isRead: note.isRead,
-      },
-    });
   }
 
   async markAsRead(id: string, userId: string): Promise<NoteResponseDto> {
     const note = await this.repository.findById(id);
-    if (!note || note.userId !== userId) {
-      throw new NotFoundException(`Note with ID ${id} not found`);
-    }
+    ensureNoteOwnership(note, userId, id);
+
     const updatedNote = await this.repository.update(id, { isRead: true });
     this.safeEmitNoteUpdated(updatedNote);
     return NoteMapper.toResponseDto(updatedNote);
@@ -197,34 +150,11 @@ export class NotesService {
 
   async createFromFile(
     file: Express.Multer.File,
-    dtoOrUserId: UploadNoteDto | string,
-    userIdOrCategory?: string,
-    title?: string,
-    content?: string,
-    categoryId?: string,
+    dto: UploadNoteDto,
+    userId: string,
   ): Promise<NoteResponseDto> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
-    }
-
-    let userId: string;
-    let noteCategory: string | undefined;
-    let noteTitleInput: string | undefined;
-    let noteContentInput: string | undefined;
-    let noteCategoryId: string | undefined;
-
-    if (typeof dtoOrUserId === 'string') {
-      userId = dtoOrUserId;
-      noteCategory = userIdOrCategory;
-      noteTitleInput = title;
-      noteContentInput = content;
-      noteCategoryId = categoryId;
-    } else {
-      userId = userIdOrCategory || '';
-      noteCategory = dtoOrUserId?.category;
-      noteTitleInput = dtoOrUserId?.title;
-      noteContentInput = dtoOrUserId?.content;
-      noteCategoryId = dtoOrUserId?.categoryId;
     }
 
     // Delegate physical storage to StorageService
@@ -250,30 +180,29 @@ export class NotesService {
       );
     }
 
-    const defaultFallbackContent = `[Tập tin đính kèm: ${storedFile.originalName}](${storedFile.fileUrl})`;
-    let noteContent = defaultFallbackContent;
+    const noteContent = buildFileNoteContent({
+      inputContent: dto.content,
+      parsedMarkdown,
+      originalName: storedFile.originalName,
+      fileUrl: storedFile.fileUrl,
+    });
 
-    if (noteContentInput?.trim()) {
-      noteContent = parsedMarkdown
-        ? `${noteContentInput.trim()}\n\n${parsedMarkdown}`
-        : noteContentInput.trim();
-    } else if (parsedMarkdown) {
-      noteContent = parsedMarkdown;
-    }
-
-    const noteTitle = noteTitleInput?.trim() || storedFile.originalName;
+    const noteTitle = deriveNoteTitle({
+      inputTitle: dto.title,
+      fallback: storedFile.originalName,
+    });
 
     const resolvedCategory: Category | null =
       await this.categoriesService.resolveCategoryForNote(
         userId,
-        noteCategory,
-        noteCategoryId,
+        dto.category,
+        dto.categoryId,
       );
 
     const note = await this.repository.create({
       title: noteTitle,
       content: noteContent,
-      userInput: noteContentInput?.trim() || storedFile.originalName,
+      userInput: dto.content?.trim() || storedFile.originalName,
       url: storedFile.fileUrl,
       categoryId: resolvedCategory?.id,
       status: Status.COMPLETED,
@@ -285,13 +214,17 @@ export class NotesService {
   }
 
   async search(
-    queryOrDto: SearchNotesDto | string,
+    dto: SearchNotesDto,
     userId: string,
   ): Promise<{ notes: NoteResponseDto[] }> {
-    const query =
-      typeof queryOrDto === 'string' ? queryOrDto : queryOrDto?.query || '';
+    const query = dto.query || '';
     this.logger.log(`Searching notes for query: ${query}`);
     const notes = await this.repository.search(userId, query);
     return { notes: NoteMapper.toResponseDtoList(notes) };
+  }
+
+  private safeEmitNoteUpdated(note: NoteWithCategory): void {
+    const event = createNoteUpdatedDomainEvent(note);
+    this.eventsService.emit(event);
   }
 }
