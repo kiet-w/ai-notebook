@@ -14,7 +14,7 @@ import { FindAllNotesQueryDto } from './dto/find-all-notes-query.dto';
 import { SearchNotesDto } from './dto/search-notes.dto';
 import { NoteResponseDto } from './dto/note-response.dto';
 import { NoteMapper } from './mappers/note.mapper';
-import { Status } from '@prisma/client';
+import { Category, Status } from '@prisma/client';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { NoteUpdatedEvent } from './types/sse-event.type';
@@ -103,7 +103,7 @@ export class NotesService {
       title = firstLine ? firstLine.slice(0, 80) : 'Untitled';
     }
 
-    const resolvedCategory =
+    const resolvedCategory: Category | null =
       await this.categoriesService.resolveCategoryForNote(
         userId,
         createNoteDto.category,
@@ -263,7 +263,7 @@ export class NotesService {
 
     const noteTitle = noteTitleInput?.trim() || storedFile.originalName;
 
-    const resolvedCategory =
+    const resolvedCategory: Category | null =
       await this.categoriesService.resolveCategoryForNote(
         userId,
         noteCategory,
