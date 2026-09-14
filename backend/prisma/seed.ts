@@ -20,12 +20,15 @@ async function main() {
   const categoryMap: Record<string, string> = {};
 
   for (const cat of defaultCategories) {
-    const upserted = await prisma.category.upsert({
-      where: { userId_name: { userId: null as unknown as string, name: cat.name } },
-      update: {},
-      create: cat,
+    let existing = await prisma.category.findFirst({
+      where: { name: cat.name, isDefault: true },
     });
-    categoryMap[cat.name] = upserted.id;
+    if (!existing) {
+      existing = await prisma.category.create({
+        data: cat,
+      });
+    }
+    categoryMap[cat.name] = existing.id;
   }
 
   const notes = [
