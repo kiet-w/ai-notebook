@@ -22,3 +22,5 @@ Whenever Gemini edits or creates code in the backend, you **MUST STRICTLY** adhe
 ## 4. Development Conventions
 - **Module/Folder Structure:** Chia các feature/domain ra thành các folder riêng biệt theo chức năng (VD: `notes`, `songs`). Mỗi folder/module bắt buộc phải tách biệt các file `dto`, `repository`, `service`, `controller`.
 - **Repositories:** Database logic is abstracted into repository classes (e.g., `SongRepository`). Khuyến khích sử dụng một `BaseRepository` (root repository) cho các query lặp lại nhiều lần.
+- **Detailed Development SOP:** Tham khảo chi tiết quy trình chuẩn 9 bước và templates tại `backend/AGENTS.md`.
+
