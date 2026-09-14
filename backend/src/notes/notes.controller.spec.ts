@@ -3,6 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotesController } from './notes.controller';
 import { NotesService } from './notes.service';
 import { JwtService } from '@nestjs/jwt';
+import { NoteResponseDto } from './dto/note-response.dto';
+import { Status } from '@prisma/client';
 
 describe('NotesController', () => {
   let controller: NotesController;
@@ -12,6 +14,22 @@ describe('NotesController', () => {
     user: { id: 'test-user-id', role: 'user' },
   } as unknown as Parameters<typeof controller.create>[1];
 
+  const mockResponseDto: NoteResponseDto = {
+    id: '123',
+    url: null,
+    userInput: 'Hello',
+    title: 'Hello',
+    aiTitle: 'Hello',
+    aiSummary: null,
+    aiBullets: null,
+    content: 'Hello',
+    category: 'Other',
+    categoryId: 'cat-1',
+    status: Status.COMPLETED,
+    isRead: false,
+    createdAt: new Date(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NotesController],
@@ -19,12 +37,14 @@ describe('NotesController', () => {
         {
           provide: NotesService,
           useValue: {
-            getEventStream: jest.fn(),
             create: jest.fn(),
+            uploadFile: jest.fn(),
+            createFromFile: jest.fn(),
             findAll: jest.fn(),
             findOne: jest.fn(),
-            createFromFile: jest.fn(),
+            markAsRead: jest.fn(),
             search: jest.fn(),
+            getUnreadCounts: jest.fn(),
           },
         },
         {
@@ -45,72 +65,22 @@ describe('NotesController', () => {
   });
 
   describe('create', () => {
-    it('should create a note directly and return NoteResponseDto with COMPLETED status', async () => {
-      const mockNote = {
-        id: '123',
-        url: null,
-        userInput: 'Hello',
-        aiTitle: 'Hello',
-        aiSummary: null,
-        aiBullets: null,
-        content: 'Hello',
-        category: { id: 'cat-1', name: 'Other' },
-        categoryId: 'cat-1',
-        status: 'COMPLETED' as const,
-        isRead: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    it('should delegate to service.create and return the result', async () => {
+      (service.create as jest.Mock).mockResolvedValue(mockResponseDto);
 
-      (service.create as jest.Mock).mockResolvedValue(mockNote);
-
-      const result = await controller.create({ content: 'Hello' }, mockAuthReq);
+      const dto = { content: 'Hello' };
+      const result = await controller.create(dto, mockAuthReq);
 
       expect(jest.mocked(service.create)).toHaveBeenCalledWith(
-        { content: 'Hello' },
+        dto,
         'test-user-id',
       );
-      expect(result.id).toBe('123');
-      expect(result.title).toBe('Hello');
-      expect(result.category).toBe('Other');
-      expect(result.status).toBe('COMPLETED');
-    });
-  });
-
-  describe('search', () => {
-    it('should search notes and return matching notes array', async () => {
-      const mockNote = {
-        id: '123',
-        url: null,
-        userInput: 'Note with query',
-        aiTitle: 'Note with query',
-        aiSummary: null,
-        aiBullets: null,
-        content: 'Note with query',
-        category: { id: 'cat-1', name: 'Other' },
-        categoryId: 'cat-1',
-        status: 'COMPLETED' as const,
-        isRead: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      (service.search as jest.Mock).mockResolvedValue([mockNote]);
-
-      const result = await controller.search({ query: 'query' }, mockAuthReq);
-
-      expect(jest.mocked(service.search)).toHaveBeenCalledWith(
-        'query',
-        'test-user-id',
-      );
-      expect(result.notes).toHaveLength(1);
-      expect(result.notes[0].id).toBe('123');
-      expect(result.notes[0].category).toBe('Other');
+      expect(result).toBe(mockResponseDto);
     });
   });
 
   describe('uploadFile', () => {
-    it('should upload a file and return the completed note', async () => {
+    it('should delegate to service.createFromFile and return the result', async () => {
       const mockFile = {
         fieldname: 'file',
         originalname: 'test.pdf',
@@ -120,47 +90,95 @@ describe('NotesController', () => {
         size: 11,
       } as Express.Multer.File;
 
-      const mockNote = {
-        id: '123',
-        url: '/uploads/test.pdf',
-        userInput: 'test.pdf',
-        aiTitle: 'test.pdf',
-        aiSummary: null,
-        aiBullets: null,
-        content: 'Tập tin đính kèm: test.pdf',
-        category: { id: 'cat-1', name: 'Other' },
-        categoryId: 'cat-1',
-        status: 'COMPLETED' as const,
-        isRead: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const uploadDto = { category: 'Tech' };
+      (service.createFromFile as jest.Mock).mockResolvedValue(mockResponseDto);
 
-      (service.createFromFile as jest.Mock).mockResolvedValue(mockNote);
-
-      const result = await controller.uploadFile(mockFile, {}, mockAuthReq);
+      const result = await controller.uploadFile(
+        mockFile,
+        uploadDto,
+        mockAuthReq,
+      );
 
       expect(jest.mocked(service.createFromFile)).toHaveBeenCalledWith(
         mockFile,
+        uploadDto,
         'test-user-id',
-        undefined,
-        undefined,
-        undefined,
-        undefined,
       );
-      expect(result.id).toBe('123');
-      expect(result.category).toBe('Other');
-      expect(result.status).toBe('COMPLETED');
+      expect(result).toBe(mockResponseDto);
     });
+  });
 
-    it('should throw BadRequestException if no file is uploaded', async () => {
-      await expect(
-        controller.uploadFile(
-          undefined as unknown as Express.Multer.File,
-          {},
-          mockAuthReq,
-        ),
-      ).rejects.toThrow('No file uploaded');
+  describe('findAll', () => {
+    it('should delegate to service.findAll and return the result', async () => {
+      const query = { category: 'Tech', limit: 10 };
+      (service.findAll as jest.Mock).mockResolvedValue([mockResponseDto]);
+
+      const result = await controller.findAll(query, mockAuthReq);
+
+      expect(jest.mocked(service.findAll)).toHaveBeenCalledWith(
+        query,
+        'test-user-id',
+      );
+      expect(result).toEqual([mockResponseDto]);
+    });
+  });
+
+  describe('getUnreadCounts', () => {
+    it('should delegate to service.getUnreadCounts and return counts', async () => {
+      const mockCounts = { Tech: 2, Other: 1 };
+      (service.getUnreadCounts as jest.Mock).mockResolvedValue(mockCounts);
+
+      const result = await controller.getUnreadCounts(mockAuthReq);
+
+      expect(jest.mocked(service.getUnreadCounts)).toHaveBeenCalledWith(
+        'test-user-id',
+      );
+      expect(result).toEqual(mockCounts);
+    });
+  });
+
+  describe('search', () => {
+    it('should delegate to service.search and return matching notes object', async () => {
+      const searchDto = { query: 'query' };
+      const searchResult = { notes: [mockResponseDto] };
+      (service.search as jest.Mock).mockResolvedValue(searchResult);
+
+      const result = await controller.search(searchDto, mockAuthReq);
+
+      expect(jest.mocked(service.search)).toHaveBeenCalledWith(
+        searchDto,
+        'test-user-id',
+      );
+      expect(result).toBe(searchResult);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should delegate to service.findOne and return the note', async () => {
+      (service.findOne as jest.Mock).mockResolvedValue(mockResponseDto);
+
+      const result = await controller.findOne('123', mockAuthReq);
+
+      expect(jest.mocked(service.findOne)).toHaveBeenCalledWith(
+        '123',
+        'test-user-id',
+      );
+      expect(result).toBe(mockResponseDto);
+    });
+  });
+
+  describe('markAsRead', () => {
+    it('should delegate to service.markAsRead and return updated note', async () => {
+      const updatedDto = { ...mockResponseDto, isRead: true };
+      (service.markAsRead as jest.Mock).mockResolvedValue(updatedDto);
+
+      const result = await controller.markAsRead('123', mockAuthReq);
+
+      expect(jest.mocked(service.markAsRead)).toHaveBeenCalledWith(
+        '123',
+        'test-user-id',
+      );
+      expect(result).toBe(updatedDto);
     });
   });
 });

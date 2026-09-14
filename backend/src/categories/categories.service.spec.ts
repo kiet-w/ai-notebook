@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { CategoriesService } from './categories.service';
-import { CategoriesRepository } from './categories.repository';
+import { CategoriesRepository } from './repository/categories.repository';
 import {
   ConflictException,
   ForbiddenException,

@@ -4,13 +4,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Post,
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  BadRequestException,
   Patch,
   Query,
   Req,
@@ -22,8 +20,6 @@ import { UploadNoteDto } from './dto/upload-note.dto';
 import { NoteResponseDto } from './dto/note-response.dto';
 import { FindAllNotesQueryDto } from './dto/find-all-notes-query.dto';
 import { SearchNotesDto } from './dto/search-notes.dto';
-import { NoteWithCategory } from './repositories/notes.repository';
-import { extractBullets } from './utils/note.utils';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { Request } from 'express';
@@ -39,18 +35,17 @@ export class NotesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(
+  create(
     @Body() createNoteDto: CreateNoteDto,
     @Req() req: AuthRequest,
   ): Promise<NoteResponseDto> {
-    const note = await this.notesService.create(createNoteDto, req.user.id);
-    return this.toResponseDto(note);
+    return this.notesService.create(createNoteDto, req.user.id);
   }
 
   @Post('upload')
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(
+  uploadFile(
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addFileTypeValidator({
@@ -67,94 +62,44 @@ export class NotesController {
     @Body() uploadNoteDto: UploadNoteDto,
     @Req() req: AuthRequest,
   ): Promise<NoteResponseDto> {
-    if (!file) throw new BadRequestException('No file uploaded');
-    const note = await this.notesService.createFromFile(
-      file,
-      req.user.id,
-      uploadNoteDto?.category,
-      uploadNoteDto?.title,
-      uploadNoteDto?.content,
-      uploadNoteDto?.categoryId,
-    );
-    return this.toResponseDto(note);
+    return this.notesService.createFromFile(file, uploadNoteDto, req.user.id);
   }
 
   @Get()
-  async findAll(
+  findAll(
     @Query() query: FindAllNotesQueryDto,
     @Req() req: AuthRequest,
   ): Promise<NoteResponseDto[]> {
-    const notes = await this.notesService.findAll({
-      userId: req.user.id,
-      category: query.category,
-      limit: query.limit,
-      cursor: query.cursor,
-    });
-    return notes.map((note) => this.toResponseDto(note));
+    return this.notesService.findAll(query, req.user.id);
   }
 
   @Get('unread-counts')
-  async getUnreadCounts(
-    @Req() req: AuthRequest,
-  ): Promise<Record<string, number>> {
+  getUnreadCounts(@Req() req: AuthRequest): Promise<Record<string, number>> {
     return this.notesService.getUnreadCounts(req.user.id);
   }
 
   @Post('search')
   @HttpCode(HttpStatus.OK)
-  async search(
+  search(
     @Body() searchNotesDto: SearchNotesDto,
     @Req() req: AuthRequest,
   ): Promise<{ notes: NoteResponseDto[] }> {
-    const notes = await this.notesService.search(
-      searchNotesDto.query,
-      req.user.id,
-    );
-    return { notes: notes.map((note) => this.toResponseDto(note)) };
+    return this.notesService.search(searchNotesDto, req.user.id);
   }
 
   @Get(':id')
-  async findOne(
+  findOne(
     @Param('id') id: string,
     @Req() req: AuthRequest,
   ): Promise<NoteResponseDto> {
-    const note = await this.notesService.findOne(id, req.user.id);
-    if (!note) throw new NotFoundException(`Note with ID ${id} not found`);
-    return this.toResponseDto(note);
+    return this.notesService.findOne(id, req.user.id);
   }
 
   @Patch(':id/read')
-  async markAsRead(
+  markAsRead(
     @Param('id') id: string,
     @Req() req: AuthRequest,
   ): Promise<NoteResponseDto> {
-    const note = await this.notesService.markAsRead(id, req.user.id);
-    return this.toResponseDto(note);
-  }
-
-  private toResponseDto(note: NoteWithCategory): NoteResponseDto {
-    let url = note.url;
-    if (url && url.startsWith('/uploads/')) {
-      const baseUrl =
-        process.env.BACKEND_URL ||
-        `http://localhost:${process.env.PORT || '3001'}`;
-      url = `${baseUrl}${url}`;
-    }
-
-    return {
-      id: note.id,
-      url,
-      userInput: note.userInput,
-      title: note.aiTitle,
-      aiTitle: note.aiTitle,
-      aiSummary: note.aiSummary,
-      aiBullets: extractBullets(note.aiBullets),
-      content: note.content,
-      category: note.category?.name || 'Other',
-      categoryId: note.categoryId ?? null,
-      status: note.status,
-      isRead: note.isRead,
-      createdAt: note.createdAt,
-    };
+    return this.notesService.markAsRead(id, req.user.id);
   }
 }

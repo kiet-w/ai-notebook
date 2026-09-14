@@ -23,7 +23,7 @@ import { ResponseUserDto } from './dto/response-user.dto';
 import {
   clearRefreshTokenCookie,
   setRefreshTokenCookie,
-} from './helper/cookie.helper';
+} from './utils/cookie.helper';
 import type { Request, Response } from 'express';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';

@@ -6,6 +6,10 @@ import { NotesModule } from './notes/notes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { LoggerModule } from 'nestjs-pino';
 import { UserModule } from './user/user.module';
+import { StorageModule } from './storage/storage.module';
+import { EventsModule } from './events/events.module';
+import { ParserModule } from './parser/parser.module';
+import { ScraperModule } from './scraper/scraper.module';
 import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
 
@@ -99,6 +103,10 @@ const isProduction = process.env.NODE_ENV === 'production';
     CategoriesModule,
     NotesModule,
     UserModule,
+    StorageModule,
+    EventsModule,
+    ParserModule,
+    ScraperModule,
   ],
   controllers: [],
   providers: [
