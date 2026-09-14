@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MarkitdownService } from './markitdown.service';
-import { TextStructuringService } from './text-structuring.service';
+import { MarkitdownService } from './services/markitdown.service';
+import { TextStructuringService } from './services/text-structuring.service';
 import { ParsedDocumentResult } from './types/document-parser.type';
 
 @Injectable()

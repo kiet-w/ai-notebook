@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MarkitdownService } from './markitdown.service';
+import { MarkitdownService } from '../services/markitdown.service';
 import { execFile } from 'child_process';
 
 // Mock child_process

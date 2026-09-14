@@ -1,4 +1,4 @@
-import { NoteMapper } from './note.mapper';
+import { NoteMapper } from '../mappers/note.mapper';
 import { NoteWithCategory } from '../repository/notes.repository';
 import { Status } from '@prisma/client';
 

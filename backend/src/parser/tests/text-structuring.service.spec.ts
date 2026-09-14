@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TextStructuringService } from './text-structuring.service';
+import { TextStructuringService } from '../services/text-structuring.service';
 
 describe('TextStructuringService', () => {
   let service: TextStructuringService;

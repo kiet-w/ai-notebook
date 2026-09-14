@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import * as fs from 'fs';
 import { Readable } from 'stream';
-import { StorageService } from './storage.service';
+import { StorageService } from '../storage.service';
 
 describe('StorageService', () => {
   let service: StorageService;

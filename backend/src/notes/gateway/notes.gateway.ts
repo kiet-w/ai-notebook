@@ -5,7 +5,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { NotesService } from './notes.service';
+import { NotesService } from '../notes.service';
 import { JwtService } from '@nestjs/jwt';
 import { Logger, OnModuleInit } from '@nestjs/common';
 

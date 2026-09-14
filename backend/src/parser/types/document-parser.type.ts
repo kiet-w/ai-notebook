@@ -1,4 +1,4 @@
-import { StructuredSection } from '../text-structuring.service';
+import { StructuredSection } from '../services/text-structuring.service';
 
 export interface ParsedDocumentResult {
   rawMarkdown: string;

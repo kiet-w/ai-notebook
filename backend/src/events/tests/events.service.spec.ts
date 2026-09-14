@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import { EventsService } from './events.service';
-import { AppDomainEvent, NoteUpdatedEvent } from './types/domain-event.type';
+import { EventsService } from '../events.service';
+import { AppDomainEvent, NoteUpdatedEvent } from '../types/domain-event.type';
 
 describe('EventsService', () => {
   let service: EventsService;

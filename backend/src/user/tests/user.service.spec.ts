@@ -2,16 +2,16 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserService } from './user.service';
-import { UserRepository } from './repository/user.repository';
-import { PrismaService } from '../prisma/prisma.service';
+import { UserService } from '../user.service';
+import { UserRepository } from '../repository/user.repository';
+import { PrismaService } from '../../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { User } from '@prisma/client';
 import * as argon2 from 'argon2';
-import { CheckEmailException } from '../common/exceptions/auth/check-email.exception';
-import { VerifyPasswordException } from '../common/exceptions/auth/verify-password.exception';
+import { CheckEmailException } from '../../common/exceptions/auth/check-email.exception';
+import { VerifyPasswordException } from '../../common/exceptions/auth/verify-password.exception';
 
 jest.mock('argon2', () => ({
   hash: jest.fn(),

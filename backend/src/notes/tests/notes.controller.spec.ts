@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotesController } from './notes.controller';
-import { NotesService } from './notes.service';
+import { NotesController } from '../notes.controller';
+import { NotesService } from '../notes.service';
 import { JwtService } from '@nestjs/jwt';
-import { NoteResponseDto } from './dto/note-response.dto';
+import { NoteResponseDto } from '../dto/note-response.dto';
 import { Status } from '@prisma/client';
 
 describe('NotesController', () => {

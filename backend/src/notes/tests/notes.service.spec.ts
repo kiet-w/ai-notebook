@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotesService } from './notes.service';
-import { NotesRepository } from './repository/notes.repository';
-import { CategoriesService } from '../categories/categories.service';
-import { StorageService } from '../storage/storage.service';
-import { EventsService } from '../events/events.service';
-import { DocumentParserService } from '../parser/document-parser.service';
-import { ScraperService } from '../scraper/scraper.service';
+import { NotesService } from '../notes.service';
+import { NotesRepository } from '../repository/notes.repository';
+import { CategoriesService } from '../../categories/categories.service';
+import { StorageService } from '../../storage/storage.service';
+import { EventsService } from '../../events/events.service';
+import { DocumentParserService } from '../../parser/parser.service';
+import { ScraperService } from '../../scraper/scraper.service';
 import { Category, Status } from '@prisma/client';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { of } from 'rxjs';

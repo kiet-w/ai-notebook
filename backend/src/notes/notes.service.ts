@@ -22,7 +22,7 @@ import { extractBullets } from './utils/note.utils';
 import { CategoriesService } from '../categories/categories.service';
 import { StorageService } from '../storage/storage.service';
 import { EventsService } from '../events/events.service';
-import { DocumentParserService } from '../parser/document-parser.service';
+import { DocumentParserService } from '../parser/parser.service';
 import { ScraperService } from '../scraper/scraper.service';
 import { randomUUID } from 'crypto';
 

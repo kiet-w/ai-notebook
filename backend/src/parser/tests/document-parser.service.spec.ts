@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DocumentParserService } from './document-parser.service';
-import { MarkitdownService } from './markitdown.service';
-import { TextStructuringService } from './text-structuring.service';
-import { ParsedDocumentResult } from './types/document-parser.type';
+import { DocumentParserService } from '../parser.service';
+import { MarkitdownService } from '../services/markitdown.service';
+import { TextStructuringService } from '../services/text-structuring.service';
+import { ParsedDocumentResult } from '../types/document-parser.type';
 
 describe('DocumentParserService', () => {
   let service: DocumentParserService;
