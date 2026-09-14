@@ -160,6 +160,11 @@ export const en: TranslationDictionary = {
     categoryExistsError: 'Category "{name}" already exists',
     addCategory: 'Add Category',
     newCategory: 'New Category',
+    annotations: 'Your Annotations',
+    addAnnotation: 'Add Note',
+    editAnnotation: 'Edit Note',
+    deleteAnnotation: 'Delete Note',
+    selectTextToAnnotate: 'Highlight text in the article to add personal notes.',
   },
   ws: {
     title: 'WebSocket Handshake Hash — Secondary Brain',

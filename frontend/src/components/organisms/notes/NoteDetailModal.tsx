@@ -87,8 +87,8 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
   return (
     <div 
       className={cn(
-        'fixed inset-0 z-[100] flex bg-black/40 dark:bg-black/60 backdrop-blur-md p-4 md:p-6 overflow-y-auto',
-        hasImage ? 'flex-col lg:flex-row items-center justify-start lg:justify-center gap-6 py-8 lg:py-0' : 'items-center justify-center'
+        'fixed inset-0 z-[100] flex bg-black/40 dark:bg-black/60 backdrop-blur-md p-3 sm:p-4 md:p-6 overflow-y-auto',
+        hasImage ? 'flex-col lg:flex-row items-center justify-start lg:justify-center gap-6 py-6 lg:py-0' : 'items-center justify-center'
       )}
       onClick={onClose}
     >
@@ -96,12 +96,12 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
       <div 
         className={cn(
           'bg-white/95 dark:bg-[#0b0b0f]/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/40 rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden',
-          hasImage ? 'w-full lg:w-[45%] max-w-3xl h-[80vh] lg:h-[85vh] lg:max-h-[800px]' : 'w-full max-w-3xl h-[80vh] lg:h-[85vh] lg:max-h-[800px]'
+          hasImage ? 'w-full lg:w-[48%] max-w-3xl h-[85vh] lg:h-[88vh] lg:max-h-[850px]' : 'w-full max-w-3xl h-[85vh] lg:h-[88vh] lg:max-h-[850px]'
         )}
         onClick={(e) => e.stopPropagation()}
       >
         <NoteDetailHeader note={displayNote} onClose={onClose} />
-        <div className={cn('flex-1 overflow-y-auto p-6 md:p-8', displayNote.content && 'lg:overflow-hidden lg:flex lg:flex-col lg:p-0')}>
+        <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden flex flex-col p-0">
           <NoteDetailBody note={displayNote} loading={loading} hasDoc={hasDoc} />
         </div>
         <NoteDetailFooter createdAt={displayNote.createdAt} />

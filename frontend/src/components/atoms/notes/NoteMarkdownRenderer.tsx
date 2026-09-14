@@ -1,9 +1,13 @@
 import React from 'react';
 import { getRelativeImageUrl } from '@/utils/image';
+import { NoteAnnotation } from '@/types/annotation';
+import NoteAnnotationHighlight from './NoteAnnotationHighlight';
 
 export interface NoteMarkdownRendererProps {
   content?: string | null;
   className?: string;
+  annotations?: NoteAnnotation[];
+  onAnnotationClick?: (annotation: NoteAnnotation, e: React.MouseEvent) => void;
 }
 
 export function parseInlineMarkdown(text: string) {
@@ -41,7 +45,75 @@ export function parseInlineMarkdown(text: string) {
 
 export const parseBoldText = parseInlineMarkdown;
 
-export function NoteMarkdownRenderer({ content, className }: NoteMarkdownRendererProps) {
+function renderTextWithAnnotations(
+  text: string,
+  annotations: NoteAnnotation[] = [],
+  onAnnotationClick?: (annotation: NoteAnnotation, e: React.MouseEvent) => void,
+) {
+  if (!annotations || annotations.length === 0 || !text) {
+    return parseBoldText(text);
+  }
+
+  const matchingAnnotations = annotations.filter(
+    (ann) => ann.text && text.includes(ann.text),
+  );
+
+  if (matchingAnnotations.length === 0) {
+    return parseBoldText(text);
+  }
+
+  const sorted = [...matchingAnnotations].sort(
+    (a, b) => text.indexOf(a.text) - text.indexOf(b.text),
+  );
+
+  const elements: React.ReactNode[] = [];
+  let remainingText = text;
+  let keyIdx = 0;
+
+  for (const ann of sorted) {
+    const idx = remainingText.indexOf(ann.text);
+    if (idx === -1) continue;
+
+    const before = remainingText.slice(0, idx);
+    const match = remainingText.slice(idx, idx + ann.text.length);
+    remainingText = remainingText.slice(idx + ann.text.length);
+
+    if (before) {
+      elements.push(
+        <React.Fragment key={`text-${keyIdx++}`}>
+          {parseBoldText(before)}
+        </React.Fragment>,
+      );
+    }
+
+    elements.push(
+      <NoteAnnotationHighlight
+        key={`ann-${ann.id}-${keyIdx++}`}
+        annotation={ann}
+        onClick={(clickedAnn, e) => onAnnotationClick?.(clickedAnn, e)}
+      >
+        {parseBoldText(match)}
+      </NoteAnnotationHighlight>,
+    );
+  }
+
+  if (remainingText) {
+    elements.push(
+      <React.Fragment key={`text-${keyIdx++}`}>
+        {parseBoldText(remainingText)}
+      </React.Fragment>,
+    );
+  }
+
+  return elements;
+}
+
+export function NoteMarkdownRenderer({
+  content,
+  className,
+  annotations = [],
+  onAnnotationClick,
+}: NoteMarkdownRendererProps) {
   if (!content) return null;
 
   const lines = content.split('\n');
@@ -76,7 +148,7 @@ export function NoteMarkdownRenderer({ content, className }: NoteMarkdownRendere
           return (
             <ul key={index} className="list-disc pl-5 my-1">
               <li className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
-                {parseBoldText(bulletContent)}
+                {renderTextWithAnnotations(bulletContent, annotations, onAnnotationClick)}
               </li>
             </ul>
           );
@@ -89,7 +161,7 @@ export function NoteMarkdownRenderer({ content, className }: NoteMarkdownRendere
         }
         return (
           <p key={index} className="text-sm text-zinc-700 dark:text-zinc-300 my-1 leading-relaxed font-medium">
-            {parseBoldText(line)}
+            {renderTextWithAnnotations(line, annotations, onAnnotationClick)}
           </p>
         );
       })}

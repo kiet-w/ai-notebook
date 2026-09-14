@@ -36,3 +36,7 @@ export * from './NoteFilePreview';
 export { default as NoteFilePreview } from './NoteFilePreview';
 export * from './NoteCategoryPicker';
 export { default as NoteCategoryPicker } from './NoteCategoryPicker';
+export * from './NoteAnnotationPopover';
+export { default as NoteAnnotationPopover } from './NoteAnnotationPopover';
+export * from './NoteAnnotationsList';
+export { default as NoteAnnotationsList } from './NoteAnnotationsList';

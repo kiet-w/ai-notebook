@@ -163,6 +163,11 @@ export interface NotesTranslations {
   categoryExistsError?: string;
   addCategory?: string;
   newCategory?: string;
+  annotations?: string;
+  addAnnotation?: string;
+  editAnnotation?: string;
+  deleteAnnotation?: string;
+  selectTextToAnnotate?: string;
 }
 
 export interface WsTranslations {

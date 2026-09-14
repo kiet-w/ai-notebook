@@ -160,6 +160,11 @@ export const vi: TranslationDictionary = {
     categoryExistsError: 'Danh mục "{name}" đã tồn tại',
     addCategory: 'Thêm danh mục',
     newCategory: 'Danh mục mới',
+    annotations: 'Ghi chú của bạn',
+    addAnnotation: 'Thêm ghi chú',
+    editAnnotation: 'Chỉnh sửa ghi chú',
+    deleteAnnotation: 'Xóa ghi chú',
+    selectTextToAnnotate: 'Bôi đen đoạn văn bản trong bài để tạo ghi chú cá nhân.',
   },
   ws: {
     title: 'WebSocket Handshake Hash — Secondary Brain',
