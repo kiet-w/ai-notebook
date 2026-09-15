@@ -10,37 +10,82 @@ export interface NoteMarkdownRendererProps {
   onAnnotationClick?: (annotation: NoteAnnotation, e: React.MouseEvent) => void;
 }
 
-export function parseInlineMarkdown(text: string) {
-  const tokenRegex = /(\[.*?\]\(.*?\)|\*\*.*?\*\*)/g;
-  const parts = text.split(tokenRegex);
+export interface InlineToken {
+  type: 'text' | 'bold' | 'link';
+  text: string;
+  href?: string;
+}
 
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return (
-        <strong key={i} className="font-semibold text-foreground">
-          {part.slice(2, -2)}
-        </strong>
-      );
+export function parseMarkdownTokens(raw: string): InlineToken[] {
+  if (!raw) return [];
+
+  const tokenRegex = /(\[.*?\]\(.*?\)|\*\*.*?\*\*)/g;
+  const parts = raw.split(tokenRegex);
+  const tokens: InlineToken[] = [];
+
+  for (const part of parts) {
+    if (!part) continue;
+
+    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+      tokens.push({
+        type: 'bold',
+        text: part.slice(2, -2),
+      });
+    } else {
+      const linkMatch = /^\[(.*?)\]\((.*?)\)$/.exec(part);
+      if (linkMatch) {
+        tokens.push({
+          type: 'link',
+          text: linkMatch[1],
+          href: getRelativeImageUrl(linkMatch[2]),
+        });
+      } else {
+        tokens.push({
+          type: 'text',
+          text: part,
+        });
+      }
     }
-    const linkMatch = /^\[(.*?)\]\((.*?)\)$/.exec(part);
-    if (linkMatch) {
-      const linkText = linkMatch[1];
-      const rawHref = linkMatch[2];
-      const linkHref = getRelativeImageUrl(rawHref);
-      return (
-        <a
-          key={i}
-          href={linkHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-zinc-900 dark:text-zinc-100 underline decoration-zinc-400 hover:decoration-zinc-900 dark:decoration-zinc-600 dark:hover:decoration-zinc-100 font-medium break-all"
-        >
-          {linkText}
-        </a>
-      );
-    }
-    return part;
-  });
+  }
+
+  return tokens;
+}
+
+function renderFormattedPiece(
+  text: string,
+  type: 'text' | 'bold' | 'link',
+  href?: string,
+  key?: string | number,
+) {
+  if (!text) return null;
+  if (type === 'bold') {
+    return (
+      <strong key={key} className="font-semibold text-foreground">
+        {text}
+      </strong>
+    );
+  }
+  if (type === 'link') {
+    return (
+      <a
+        key={key}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-zinc-900 dark:text-zinc-100 underline decoration-zinc-400 hover:decoration-zinc-900 dark:decoration-zinc-600 dark:hover:decoration-zinc-100 font-medium break-all"
+      >
+        {text}
+      </a>
+    );
+  }
+  return <React.Fragment key={key}>{text}</React.Fragment>;
+}
+
+export function parseInlineMarkdown(text: string) {
+  const tokens = parseMarkdownTokens(text);
+  return tokens.map((token, i) =>
+    renderFormattedPiece(token.text, token.type, token.href, i),
+  );
 }
 
 export const parseBoldText = parseInlineMarkdown;
@@ -113,32 +158,43 @@ function findBestMatchIndex(
 }
 
 function renderTextWithAnnotations(
-  text: string,
+  rawText: string,
   annotations: NoteAnnotation[] = [],
   onAnnotationClick?: (annotation: NoteAnnotation, e: React.MouseEvent) => void,
   currentLineIndex?: number,
 ) {
-  if (!annotations || annotations.length === 0 || !text) {
-    return parseBoldText(text);
+  if (!rawText) return null;
+
+  const tokens = parseMarkdownTokens(rawText);
+  const fullVisibleText = tokens.map((t) => t.text).join('');
+
+  if (!annotations || annotations.length === 0 || !fullVisibleText) {
+    return tokens.map((token, i) =>
+      renderFormattedPiece(token.text, token.type, token.href, i),
+    );
   }
 
   const matchingAnnotations = annotations.filter((ann) => {
     if (!ann.text) return false;
     if (ann.lineIndex !== undefined && currentLineIndex !== undefined) {
-      return ann.lineIndex === currentLineIndex && text.includes(ann.text);
+      return (
+        ann.lineIndex === currentLineIndex && fullVisibleText.includes(ann.text)
+      );
     }
-    return text.includes(ann.text);
+    return fullVisibleText.includes(ann.text);
   });
 
   if (matchingAnnotations.length === 0) {
-    return parseBoldText(text);
+    return tokens.map((token, i) =>
+      renderFormattedPiece(token.text, token.type, token.href, i),
+    );
   }
 
   const ranges: MatchRange[] = [];
 
   for (const ann of matchingAnnotations) {
     const matchIndex = findBestMatchIndex(
-      text,
+      fullVisibleText,
       ann.text,
       ann.prefix,
       ann.suffix,
@@ -152,46 +208,60 @@ function renderTextWithAnnotations(
   }
 
   if (ranges.length === 0) {
-    return parseBoldText(text);
+    return tokens.map((token, i) =>
+      renderFormattedPiece(token.text, token.type, token.href, i),
+    );
   }
-
-  ranges.sort((a, b) => a.start - b.start);
 
   const elements: React.ReactNode[] = [];
-  let currentIndex = 0;
+  let currentOffset = 0;
   let keyIdx = 0;
 
-  for (const range of ranges) {
-    if (range.start > currentIndex) {
-      const before = text.slice(currentIndex, range.start);
-      elements.push(
-        <React.Fragment key={`text-${keyIdx++}`}>
-          {parseBoldText(before)}
-        </React.Fragment>,
-      );
+  for (const token of tokens) {
+    const tokenStart = currentOffset;
+    const tokenEnd = currentOffset + token.text.length;
+    currentOffset = tokenEnd;
+
+    const cutSet = new Set<number>([tokenStart, tokenEnd]);
+    for (const r of ranges) {
+      if (r.start > tokenStart && r.start < tokenEnd) cutSet.add(r.start);
+      if (r.end > tokenStart && r.end < tokenEnd) cutSet.add(r.end);
     }
+    const cuts = Array.from(cutSet).sort((a, b) => a - b);
 
-    const matchedText = text.slice(range.start, range.end);
-    elements.push(
-      <NoteAnnotationHighlight
-        key={`ann-${range.annotation.id}-${keyIdx++}`}
-        annotation={range.annotation}
-        onClick={(clickedAnn, e) => onAnnotationClick?.(clickedAnn, e)}
-      >
-        {parseBoldText(matchedText)}
-      </NoteAnnotationHighlight>,
-    );
+    for (let i = 0; i < cuts.length - 1; i++) {
+      const segStart = cuts[i];
+      const segEnd = cuts[i + 1];
+      const relStart = segStart - tokenStart;
+      const relEnd = segEnd - tokenStart;
+      const subText = token.text.slice(relStart, relEnd);
+      if (!subText) continue;
 
-    currentIndex = range.end;
-  }
+      const coveringRange = ranges.find(
+        (r) => segStart >= r.start && segEnd <= r.end,
+      );
 
-  if (currentIndex < text.length) {
-    const after = text.slice(currentIndex);
-    elements.push(
-      <React.Fragment key={`text-${keyIdx++}`}>
-        {parseBoldText(after)}
-      </React.Fragment>,
-    );
+      if (coveringRange) {
+        elements.push(
+          <NoteAnnotationHighlight
+            key={`ann-${coveringRange.annotation.id}-${keyIdx++}`}
+            annotation={coveringRange.annotation}
+            onClick={(clickedAnn, e) => onAnnotationClick?.(clickedAnn, e)}
+          >
+            {renderFormattedPiece(subText, token.type, token.href)}
+          </NoteAnnotationHighlight>,
+        );
+      } else {
+        elements.push(
+          renderFormattedPiece(
+            subText,
+            token.type,
+            token.href,
+            `tok-${keyIdx++}`,
+          ),
+        );
+      }
+    }
   }
 
   return elements;

@@ -94,4 +94,40 @@ describe('NoteMarkdownRenderer', () => {
     expect(markElements).toHaveLength(1);
     expect(markElements[0].textContent).toContain('những');
   });
+
+  it('should cleanly highlight a substring inside bold text without exposing asterisks', () => {
+    const markdown = 'Khái niệm ở **tầm cao** hơn rất nhiều.';
+
+    const mockAnnotation: NoteAnnotation = {
+      id: 'ann-bold-partial',
+      noteId: 'note-1',
+      text: 'tầm c',
+      comment: 'partial bold highlight',
+      color: 'amber',
+      lineIndex: 0,
+      prefix: 'niệm ở ',
+      suffix: 'ao hơn',
+      createdAt: new Date().toISOString(),
+    };
+
+    const { container } = render(
+      <NoteMarkdownRenderer
+        content={markdown}
+        annotations={[mockAnnotation]}
+      />,
+    );
+
+    // Ensure no raw ** exists in the rendered HTML output
+    expect(container.textContent).not.toContain('**');
+    expect(container.textContent).toContain('Khái niệm ở');
+    expect(container.textContent).toContain('ao hơn rất nhiều.');
+
+    const markElement = container.querySelector('mark');
+    expect(markElement).toBeInTheDocument();
+    expect(markElement?.textContent).toContain('tầm c');
+
+    // Both the highlighted and unhighlighted bold parts should retain <strong>
+    const strongElements = container.querySelectorAll('strong');
+    expect(strongElements.length).toBeGreaterThanOrEqual(1);
+  });
 });
