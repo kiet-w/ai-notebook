@@ -1,0 +1,99 @@
+services:
+  # 1. PostgreSQL Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai_notebook_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_notebook}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ai_network
+
+  # 2. NestJS Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai_notebook_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/ai_notebook?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgres@postgres:5432/ai_notebook?schema=public}
+      JWT_SECRET: ${JWT_SECRET:-local_production_mirror_jwt_secret_key_minimum_32_characters}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost,http://localhost:80,http://localhost:3000}
+      CROSS_DOMAIN_COOKIES: ${CROSS_DOMAIN_COOKIES:-false}
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-}
+      STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID:-}
+      STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:-}
+      STORAGE_BUCKET_NAME: ${STORAGE_BUCKET_NAME:-}
+      STORAGE_REGION: ${STORAGE_REGION:-}
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - ai_network
+
+  # 3. Next.js Frontend UI Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+    container_name: ai_notebook_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - ai_network
+
+  # 4. Nginx Reverse Proxy Gateway
+  nginx:
+    image: nginx:alpine
+    container_name: ai_notebook_gateway
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - ai_network
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_uploads:
+    driver: local
+
+networks:
+  ai_network:
+    driver: bridge
