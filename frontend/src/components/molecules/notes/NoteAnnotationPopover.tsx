@@ -6,7 +6,7 @@ import { cn } from '@/lib/ui-styles';
 import { useI18n } from '@/hooks/useI18n';
 
 export interface NoteAnnotationPopoverProps {
-  position: { top: number; left: number };
+  position: { top: number; left: number; bottom?: number };
   selectedText: string;
   existingAnnotation?: NoteAnnotation | null;
   onSave: (data: { text: string; comment: string; color: AnnotationColor }) => void;
@@ -39,6 +39,39 @@ export function NoteAnnotationPopover({
   const [color, setColor] = useState<AnnotationColor>(() => existingAnnotation?.color || 'amber');
   const popoverRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number }>({
+    top: Math.max(16, position.top),
+    left: Math.max(16, position.left - 160),
+  });
+
+  useEffect(() => {
+    if (!popoverRef.current) return;
+    const popoverRect = popoverRef.current.getBoundingClientRect();
+    const width = popoverRect.width || 320;
+    const height = popoverRect.height || 260;
+    const margin = 16;
+
+    // Horizontal clamping: keep within screen width
+    let left = position.left - width / 2;
+    if (left < margin) left = margin;
+    if (left + width > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - width - margin);
+    }
+
+    // Vertical positioning:
+    // If opening above the target would cut off at top, open below instead
+    let top = position.top - height - 8;
+    if (top < margin) {
+      const bottom = position.bottom ?? (position.top + 36);
+      top = bottom + 8;
+      // If placing below goes off bottom, clamp to bottom margin
+      if (top + height > window.innerHeight - margin) {
+        top = Math.max(margin, window.innerHeight - height - margin);
+      }
+    }
+
+    setCoords({ top, left });
+  }, [position]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -92,10 +125,10 @@ export function NoteAnnotationPopover({
     <div
       ref={popoverRef}
       style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
+        top: `${coords.top}px`,
+        left: `${coords.left}px`,
       }}
-      className="fixed z-[120] w-[320px] sm:w-[360px] -translate-x-1/2 -translate-y-full mb-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-4 text-left animate-in fade-in zoom-in-95 duration-150"
+      className="fixed z-[120] w-[300px] sm:w-[340px] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-4 text-left animate-in fade-in duration-150"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header with quote preview */}

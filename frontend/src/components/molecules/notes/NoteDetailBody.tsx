@@ -16,11 +16,12 @@ export interface NoteDetailBodyProps {
   note: Note;
   loading: boolean;
   hasDoc: boolean;
+  hasImage?: boolean;
 }
 
 interface PopoverState {
   isOpen: boolean;
-  position: { top: number; left: number };
+  position: { top: number; left: number; bottom?: number };
   selectedText: string;
   existingAnnotation: NoteAnnotation | null;
 }
@@ -33,7 +34,7 @@ const highlightColorOptions: { key: AnnotationColor; label: string; bg: string }
   { key: 'rose', label: 'Đỏ hồng', bg: 'bg-rose-400' },
 ];
 
-export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
+export function NoteDetailBody({ note, loading, hasDoc, hasImage }: NoteDetailBodyProps) {
   const { t } = useI18n();
   const {
     annotations,
@@ -133,8 +134,9 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
     setPopoverState({
       isOpen: true,
       position: {
-        top: Math.max(80, rect.top - 10),
-        left: Math.min(window.innerWidth - 180, Math.max(180, rect.left + rect.width / 2)),
+        top: rect.top,
+        left: rect.left + rect.width / 2,
+        bottom: rect.bottom,
       },
       selectedText: annotation.text,
       existingAnnotation: annotation,
@@ -143,11 +145,13 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
 
   const handleSelectFromList = useCallback((annotation: NoteAnnotation, e: React.MouseEvent) => {
     e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setPopoverState({
       isOpen: true,
       position: {
-        top: Math.max(80, e.clientY - 10),
-        left: Math.min(window.innerWidth - 180, Math.max(180, e.clientX)),
+        top: rect.top,
+        left: rect.left + rect.width / 2,
+        bottom: rect.bottom,
       },
       selectedText: annotation.text,
       existingAnnotation: annotation,
@@ -164,10 +168,10 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
   }
 
   const hasSidebar =
-    hasDoc ||
-    !!note.summary ||
-    (!!note.bullets && note.bullets.length > 0) ||
-    annotations.length > 0;
+    !hasImage &&
+    (hasDoc ||
+      !!note.summary ||
+      (!!note.bullets && note.bullets.length > 0));
 
   return (
     <div className="h-full relative overflow-hidden flex flex-col">
@@ -307,6 +311,48 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
               onAnnotationClick={handleAnnotationClick}
             />
           </div>
+
+          {/* If there are annotations or summary in single-column mode, render them cleanly below without changing column width */}
+          {(note.summary || (note.bullets && note.bullets.length > 0) || annotations.length > 0) && (
+            <div className="space-y-6 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/40">
+              {note.summary && (
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-2 select-none">
+                    {t('notes.summary') || 'Tóm tắt'}
+                  </p>
+                  <p className="text-sm sm:text-base text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium">
+                    {note.summary}
+                  </p>
+                </div>
+              )}
+
+              {note.bullets && note.bullets.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3 select-none">
+                    {t('notes.keyTakeaways') || 'Ý chính'}
+                  </p>
+                  <ul className="space-y-2">
+                    {note.bullets.map((bullet, i) => (
+                      <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300 flex items-start gap-2.5">
+                        <span className="mt-2 w-1.5 h-1.5 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+                        <span className="leading-relaxed font-medium">{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {annotations.length > 0 && (
+                <div className="pt-2">
+                  <NoteAnnotationsList
+                    annotations={annotations}
+                    onSelectAnnotation={handleSelectFromList}
+                    onDeleteAnnotation={deleteAnnotation}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

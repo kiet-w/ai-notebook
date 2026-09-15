@@ -157,15 +157,23 @@ export function compressAndResizeImage(
   });
 }
 
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = rawApiUrl.replace(/\/+$/, '');
+
 /**
- * Rewrites absolute backend URLs to relative paths so Next.js can optimize them seamlessly via local rewrites.
- * E.g., "http://localhost:3001/uploads/foo.png" -> "/uploads/foo.png"
+ * Rewrites relative backend URLs (e.g. /uploads/foo.png) to include the backend API URL.
+ * Preserves remote URLs (e.g. Supabase Storage, Cloudflare R2, S3).
  */
 export function getRelativeImageUrl(url: string | null | undefined): string {
   if (!url) return '';
-  const uploadsIndex = url.indexOf('/uploads/');
-  if (uploadsIndex !== -1) {
-    return url.substring(uploadsIndex);
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    if (url.includes('localhost:3001') && API_URL && !API_URL.includes('localhost:3001')) {
+      return url.replace(/https?:\/\/localhost:3001/, API_URL);
+    }
+    return url;
   }
-  return url;
+  if (url.startsWith('/')) {
+    return `${API_URL}${url}`;
+  }
+  return `${API_URL}/${url}`;
 }

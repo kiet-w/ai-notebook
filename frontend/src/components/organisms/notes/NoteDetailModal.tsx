@@ -102,7 +102,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
       >
         <NoteDetailHeader note={displayNote} onClose={onClose} />
         <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden flex flex-col p-0">
-          <NoteDetailBody note={displayNote} loading={loading} hasDoc={hasDoc} />
+          <NoteDetailBody note={displayNote} loading={loading} hasDoc={hasDoc} hasImage={hasImage} />
         </div>
         <NoteDetailFooter createdAt={displayNote.createdAt} />
       </div>

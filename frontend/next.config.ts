@@ -10,14 +10,15 @@ const nextConfig: NextConfig = {
     webpackMemoryOptimizations: true,
   },
   async rewrites() {
+    const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:3001/:path*',
+        destination: `${backendUrl}/:path*`,
       },
       {
         source: '/uploads/:path*',
-        destination: 'http://localhost:3001/uploads/:path*',
+        destination: `${backendUrl}/uploads/:path*`,
       },
     ];
   },
