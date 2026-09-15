@@ -61,39 +61,59 @@ Vì bạn đã có sẵn dự án trên **Supabase**, bạn không cần tạo d
 
 ---
 
-## ⚙️ Bước 3: Deploy Backend lên Render.com
+## ⚙️ Bước 3: Deploy Backend 24/7 Không Bao Giờ Ngủ (Hugging Face Spaces hoặc Koyeb)
 
-1. Đăng nhập [render.com](https://render.com) bằng tài khoản GitHub của bạn.
-2. Nhấn **New +** -> Chọn **Web Service**.
-3. Chọn repository `kiet-w/ai-notebook` (nhớ commit và push các thay đổi mới nhất lên GitHub trước).
-4. Cấu hình thông tin Web Service:
-   - **Name**: `ai-notebook-backend`
-   - **Region**: `Singapore` (để ping nhanh nhất).
-   - **Root Directory**: `backend`
-   - **Runtime**: `Node`
-   - **Build Command**:
+Thay vì dùng Render (bị ngủ sau 15 phút), ta dùng **Hugging Face Spaces** hoặc **Koyeb** – hoàn toàn miễn phí 0đ và **chạy liên tục 24/7 không bao giờ ngủ**, bạn mở điện thoại lúc nào cũng có kết nối ngay lập tức!
+
+### 🌟 Lựa Chọn 1 (Khuyên Dùng Nhất): Hugging Face Spaces (Docker 24/7 Miễn Phí)
+Hugging Face cung cấp miễn phí 1 container Docker với **2 vCPU và 16GB RAM**, chạy 24/7 không sleep:
+
+1. Đăng ký/Đăng nhập tại [huggingface.co](https://huggingface.co).
+2. Nhấn vào ảnh đại diện góc trên bên phải -> Chọn **New Space**.
+3. Cấu hình Space:
+   - **Space name**: `ai-notebook-api` (hoặc tên tùy ý).
+   - **License**: `mit` hoặc `apache-2.0`.
+   - **Select the Space SDK**: Chọn **Docker** (chọn template **Blank**).
+   - **Space hardware**: Chọn **CPU basic · 2 vCPU · 16GB RAM · FREE**.
+   - **Space visibility**: Chọn **Public** (để chạy 24/7 miễn phí).
+   - Nhấn **Create Space**.
+4. Kết nối mã nguồn:
+   - Trong Space vừa tạo, bạn có thể đẩy code từ máy lên repo Space của Hugging Face (hoặc vào tab **Files** tải file `Dockerfile` và thư mục `backend` lên).
+   - Hoặc dùng lệnh git đẩy nhanh từ máy:
      ```bash
-     npm install && npx prisma generate && npm run build
+     git remote add hf https://huggingface.co/spaces/YOUR_USERNAME/ai-notebook-api
+     git push hf main
      ```
-   - **Start Command**:
-     ```bash
-     npx prisma db push && npm run start:prod
-     ```
-   - **Instance Type**: Chọn **Free** ($0/month).
-5. Kéo xuống mục **Environment Variables** -> Thêm các biến sau:
-   - `NODE_ENV`: `production`
-   - `DATABASE_URL`: *(Dán chuỗi kết nối từ Neon ở Bước 1)*
-   - `DIRECT_URL`: *(Dán chuỗi kết nối từ Neon ở Bước 1)*
-   - `JWT_SECRET`: *(Chuỗi bí mật ngẫu nhiên bất kỳ dài từ 32 ký tự)*
-   - `CROSS_DOMAIN_COOKIES`: `true`
-   - `FRONTEND_ORIGIN`: `https://ai-notebook.pages.dev` *(sau khi tạo Cloudflare Pages ở Bước 4 sẽ cập nhật lại đúng domain)*
-   - `R2_ACCOUNT_ID`: *(Từ Bước 2)*
-   - `R2_ACCESS_KEY_ID`: *(Từ Bước 2)*
-   - `R2_SECRET_ACCESS_KEY`: *(Từ Bước 2)*
-   - `R2_BUCKET_NAME`: `ai-notebook-storage`
-   - `R2_PUBLIC_URL`: *(Từ Bước 2, ví dụ: https://pub-xxxxxx.r2.dev)*
-6. Nhấn **Create Web Service**. Chờ 2-3 phút để Render build và deploy.
-7. Khi thành công, sao chép URL của backend (ví dụ: `https://ai-notebook-backend.onrender.com`).
+5. Cài đặt biến môi trường bí mật (Secrets):
+   - Vào tab **Settings** của Space -> Kéo xuống mục **Variables and secrets**.
+   - Nhấn **New secret** và thêm các biến:
+     - `DATABASE_URL`: *(Chuỗi kết nối Pooler từ Supabase)*
+     - `DIRECT_URL`: *(Chuỗi kết nối Direct từ Supabase)*
+     - `JWT_SECRET`: *(Chuỗi ký tự bí mật ngẫu nhiên bất kỳ)*
+     - `CROSS_DOMAIN_COOKIES`: `true`
+     - `FRONTEND_ORIGIN`: `https://ai-notebook.pages.dev`
+     - `R2_ACCOUNT_ID`: *(Từ Bước 2)*
+     - `R2_ACCESS_KEY_ID`: *(Từ Bước 2)*
+     - `R2_SECRET_ACCESS_KEY`: *(Từ Bước 2)*
+     - `R2_BUCKET_NAME`: `ai-notebook-storage`
+     - `R2_PUBLIC_URL`: *(Từ Bước 2, ví dụ: https://pub-xxxxxx.r2.dev)*
+6. Space sẽ tự động build Docker và chạy `Running`.
+7. Lấy URL API:
+   - Nhấn vào biểu tượng 3 chấm `...` ở góc phải trên của Space -> Chọn **Embed this Space** -> Sao chép URL ở mục **Direct URL** (dạng `https://username-ai-notebook-api.hf.space`).
+
+---
+
+### 🌟 Lựa Chọn 2: Koyeb (Free Tier 24/7 Không Sleep)
+Nếu bạn thích kết nối thẳng qua GitHub 1 click:
+1. Đăng nhập [koyeb.com](https://www.koyeb.com) bằng GitHub.
+2. Nhấn **Create App** -> Chọn **GitHub**.
+3. Chọn repo `kiet-w/ai-notebook`.
+4. Cấu hình:
+   - **Work directory**: `backend`
+   - **Builder**: Chọn `Dockerfile` (hoặc `Buildpack`)
+   - **Port**: `7860` (hoặc `3001`)
+   - Thêm các biến môi trường tương tự như trên.
+5. Nhấn **Deploy** -> Koyeb sẽ cấp URL dạng `https://ai-notebook-backend-xxx.koyeb.app`.
 
 ---
 
@@ -104,7 +124,7 @@ Vì bạn đã có sẵn dự án trên **Supabase**, bạn không cần tạo d
 3. Chọn **Connect to Git** -> Chọn tài khoản GitHub và chọn repo `kiet-w/ai-notebook`.
 4. Cấu hình build:
    - **Project name**: `ai-notebook` (hoặc tên tùy thích).
-   - **Production branch**: `main` (hoặc branch bạn đang dùng).
+   - **Production branch**: `main`.
    - **Framework preset**: Chọn **Next.js**.
    - **Root directory**: `frontend`
    - **Build command**: `npm run build`
@@ -112,7 +132,7 @@ Vì bạn đã có sẵn dự án trên **Supabase**, bạn không cần tạo d
 5. Mục **Environment variables**:
    - Nhấn **Add variable**:
      - Variable name: `NEXT_PUBLIC_API_URL`
-     - Value: *(URL Backend Render từ Bước 3, ví dụ: `https://ai-notebook-backend.onrender.com`)*
+     - Value: *(URL Backend từ Hugging Face hoặc Koyeb ở Bước 3, ví dụ: `https://username-ai-notebook-api.hf.space`)*
 6. Nhấn **Save and Deploy**.
 7. Sau khi build xong, Cloudflare Pages sẽ cấp cho bạn một domain HTTPS miễn phí vĩnh viễn dạng `https://ai-notebook.pages.dev`!
 
@@ -120,9 +140,8 @@ Vì bạn đã có sẵn dự án trên **Supabase**, bạn không cần tạo d
 
 ## 🔄 Bước 5: Hoàn Tất Kết Nối Hai Chiều
 
-- Quay lại dashboard của **Render.com** -> Vào dịch vụ `ai-notebook-backend` -> Tab **Environment**.
-- Cập nhật lại giá trị biến `FRONTEND_ORIGIN` thành đúng URL Cloudflare Pages của bạn (ví dụ: `https://ai-notebook.pages.dev`).
-- Render sẽ tự động redeploy để áp dụng CORS mới.
+- Quay lại Settings của **Hugging Face Space** (hoặc **Koyeb**) -> Cập nhật lại biến `FRONTEND_ORIGIN` thành đúng URL Cloudflare Pages của bạn (`https://ai-notebook.pages.dev`).
+- Hệ thống sẽ tự động khởi động lại trong 10-15 giây để áp dụng CORS mới.
 
 ---
 
@@ -130,5 +149,6 @@ Vì bạn đã có sẵn dự án trên **Supabase**, bạn không cần tạo d
 
 1. Mở trình duyệt trên điện thoại hoặc máy tính truy cập `https://ai-notebook.pages.dev`.
 2. Bấm **Đăng ký** tài khoản đầu tiên của bạn.
-3. Tạo ghi chú mới, đính kèm ảnh hoặc PDF để kiểm tra tốc độ lưu lên Cloudflare R2.
-4. Tận hưởng ứng dụng ghi chú cá nhân tốc độ cao 24/7 hoàn toàn miễn phí!
+3. Tạo ghi chú mới, đính kèm ảnh hoặc PDF để kiểm tra tốc độ lưu lên Cloudflare R2 và Supabase.
+4. Tận hưởng ứng dụng ghi chú cá nhân tốc độ cao 24/7 hoàn toàn miễn phí, không bao giờ lo bị ngủ!
+
