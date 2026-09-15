@@ -27,16 +27,28 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
 
   app.use(cookieParser());
+  const allowedOrigins = (process.env.FRONTEND_ORIGIN || '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow any localhost/127.0.0.1 or the explicit FRONTEND_ORIGIN
+      if (!origin) {
+        return callback(null, true);
+      }
       const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
-        origin || '',
+        origin,
       );
-      if (!origin || isLocalhost || origin === process.env.FRONTEND_ORIGIN) {
+      const isPagesDev = /^https:\/\/[a-zA-Z0-9-.]+\.pages\.dev$/.test(origin);
+      const isExplicitOrigin = allowedOrigins.includes(
+        origin.replace(/\/$/, ''),
+      );
+
+      if (isLocalhost || isPagesDev || isExplicitOrigin) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error(`Not allowed by CORS: ${origin}`));
       }
     },
     credentials: true,

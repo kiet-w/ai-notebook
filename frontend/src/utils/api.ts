@@ -2,8 +2,11 @@ import { Note } from '@/types/note';
 import axios from 'axios';
 import { normalizeCategoryName } from '@/utils/category';
 
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = rawApiUrl.replace(/\/+$/, '');
+
 const apiInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+  baseURL: API_URL,
   timeout: 10000,
   headers: {
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -14,6 +17,18 @@ const apiInstance = axios.create({
 });
 let accessToken: string | null = null;
 export const getAccessToken = () => accessToken;
+
+function setClientAuthCookie(): void {
+  if (typeof document !== 'undefined') {
+    document.cookie = 'auth_session=1; path=/; max-age=604800; SameSite=Lax';
+  }
+}
+
+function clearClientAuthCookie(): void {
+  if (typeof document !== 'undefined') {
+    document.cookie = 'auth_session=; path=/; max-age=0; SameSite=Lax';
+  }
+}
 
 // ponytail: interceptor tự động gắn Bearer token vào mọi request
 apiInstance.interceptors.request.use((config) => {
@@ -42,6 +57,7 @@ apiInstance.interceptors.response.use(
         );
         
         accessToken = res.data.accessToken ?? res.data.accesToken;
+        setClientAuthCookie();
         
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('token_refreshed'));
@@ -52,6 +68,7 @@ apiInstance.interceptors.response.use(
         return apiInstance(originalRequest);
       } catch (refreshError) {
         accessToken = null;
+        clearClientAuthCookie();
         if (typeof window !== 'undefined') {
           // Cố gắng gọi api logout để xoá HttpOnly cookie trước khi redirect
           try {
@@ -192,17 +209,23 @@ export const api = {
     const res = await apiInstance.post('/users/login', { email, password });
     // ponytail: lưu accessToken vào memory để interceptor tự động gắn vào mọi request
     accessToken = res.data.accessToken ?? res.data.accesToken ?? null;
+    setClientAuthCookie();
     return res.data;
   },
 
   async register(email: string, password: string, username: string): Promise<void> {
     const res = await apiInstance.post('/users/register', { email, password, user: username });
     accessToken = res.data.accessToken ?? null;
+    setClientAuthCookie();
   },
 
   async logout(): Promise<void> {
-    await apiInstance.post('/users/logout');
-    accessToken = null;
+    try {
+      await apiInstance.post('/users/logout');
+    } finally {
+      accessToken = null;
+      clearClientAuthCookie();
+    }
   },
 };
 

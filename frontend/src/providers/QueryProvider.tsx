@@ -5,7 +5,9 @@ import { useState, useEffect } from 'react';
 import { normalizeNote, Note, getAccessToken } from '@/utils/api';
 import { io, Socket } from 'socket.io-client';
 
-const BASE_SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const BASE_SOCKET_URL = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+).replace(/\/+$/, '');
 
 export default function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({

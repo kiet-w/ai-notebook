@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 function buildCsp(isDev: boolean) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const apiUrl = (
+    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+  ).replace(/\/+$/, '');
 
   const directives = [
     "default-src 'self'",
@@ -12,7 +14,7 @@ function buildCsp(isDev: boolean) {
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: https: ${apiUrl}`,
     "font-src 'self' data:",
-    `connect-src 'self' ${apiUrl}`,
+    `connect-src 'self' ${apiUrl} wss: ws:`,
     "frame-ancestors 'none'",
     "form-action 'self'",
     "base-uri 'self'",
@@ -38,11 +40,14 @@ export function middleware(request: NextRequest) {
     'camera=(), microphone=(), geolocation=()'
   );
 
-  // ===== Logic Auth (giữ nguyên) =====
-  const refreshToken = request.cookies.get('refreshToken')?.value;
+  // ===== Logic Auth =====
+  // Hỗ trợ cả cookie nội bộ auth_session (khi khác domain với backend) và refreshToken
+  const hasAuth =
+    request.cookies.get('auth_session')?.value ||
+    request.cookies.get('refreshToken')?.value;
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
 
-  if (!refreshToken) {
+  if (!hasAuth) {
     if (!isAuthPage) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
