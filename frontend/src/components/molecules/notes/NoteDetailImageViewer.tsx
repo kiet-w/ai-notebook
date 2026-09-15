@@ -69,11 +69,28 @@ export function NoteDetailImageViewer({
         onClick={() => !hasError && setIsZoomed(!isZoomed)}
       >
         {hasError ? (
-          <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
-            <ImageOff className="w-8 h-8 text-zinc-400 dark:text-zinc-600" />
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              {t('common.error')}
-            </p>
+          <div className="flex flex-col items-center justify-center gap-3 p-6 text-center max-w-xs">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-850 flex items-center justify-center text-zinc-400 dark:text-zinc-500">
+              <ImageOff className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                {t('notes.imageNotFound') || 'Không thể tải hình ảnh đính kèm'}
+              </p>
+              <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed">
+                {t('notes.imageNotFoundDesc') || 'Tệp ảnh trên server tạm có thể đã bị xóa khi máy chủ khởi động lại.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setHasError(false);
+              }}
+              className="text-xs font-medium text-zinc-600 dark:text-zinc-300 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+            >
+              {t('common.retry') || 'Thử lại'}
+            </button>
           </div>
         ) : (
           <img 

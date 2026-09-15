@@ -7,6 +7,7 @@ import { Logger } from 'nestjs-pino';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as fs from 'fs';
+import type { Response } from 'express';
 import cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -22,6 +23,10 @@ async function bootstrap() {
 
   app.useStaticAssets(uploadsDir, {
     prefix: '/uploads/',
+    setHeaders: (res: Response) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
   });
 
   app.useLogger(app.get(Logger));

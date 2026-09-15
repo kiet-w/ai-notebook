@@ -182,14 +182,33 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
       )}
       onClick={onClose}
     >
-      {/* 1. Main Note Card */}
+      {/* 1. Left: Slim Annotation Card (Thon gọn bên trái) */}
+      {hasImage && isAnnotationPanelOpen && (
+        <NoteDetailAnnotationCard
+          annotations={annotations}
+          activeAnnotation={activeAnnotation}
+          selectedText={activeSelectedText}
+          isCreating={isCreating}
+          activeColor={activeColor}
+          onChangeActiveColor={setActiveColor}
+          onSaveNew={handleSaveNewAnnotation}
+          onUpdate={handleUpdateAnnotation}
+          onDelete={handleDeleteAnnotation}
+          onSelectAnnotation={handleSelectAnnotationFromList}
+          onCloseEditor={handleCloseEditor}
+          onClosePanel={() => setIsAnnotationPanelOpen(false)}
+          className="w-full lg:w-[280px] xl:w-[300px] shrink-0 h-[60vh] lg:h-[88vh] lg:max-h-[850px]"
+        />
+      )}
+
+      {/* 2. Middle: Main Note Card (Nội dung chính ở giữa) */}
       <div 
         className={cn(
           'bg-white/95 dark:bg-[#0b0b0f]/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/40 rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden transition-all',
           hasImage 
             ? isAnnotationPanelOpen
-              ? 'w-full lg:flex-1 lg:max-w-2xl h-[85vh] lg:h-[88vh] lg:max-h-[850px]'
-              : 'w-full lg:w-[48%] max-w-3xl h-[85vh] lg:h-[88vh] lg:max-h-[850px]'
+              ? 'w-full lg:flex-1 lg:max-w-3xl xl:max-w-4xl h-[85vh] lg:h-[88vh] lg:max-h-[850px]'
+              : 'w-full lg:flex-1 lg:max-w-4xl h-[85vh] lg:h-[88vh] lg:max-h-[850px]'
             : 'w-full max-w-3xl h-[85vh] lg:h-[88vh] lg:max-h-[850px]'
         )}
         onClick={(e) => e.stopPropagation()}
@@ -213,25 +232,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
         <NoteDetailFooter createdAt={displayNote.createdAt} />
       </div>
 
-      {/* 2. Middle Annotation Card (Hiện ở giữa Note và Ảnh) */}
-      {hasImage && isAnnotationPanelOpen && (
-        <NoteDetailAnnotationCard
-          annotations={annotations}
-          activeAnnotation={activeAnnotation}
-          selectedText={activeSelectedText}
-          isCreating={isCreating}
-          activeColor={activeColor}
-          onChangeActiveColor={setActiveColor}
-          onSaveNew={handleSaveNewAnnotation}
-          onUpdate={handleUpdateAnnotation}
-          onDelete={handleDeleteAnnotation}
-          onSelectAnnotation={handleSelectAnnotationFromList}
-          onCloseEditor={handleCloseEditor}
-          onClosePanel={() => setIsAnnotationPanelOpen(false)}
-        />
-      )}
-
-      {/* 3. Sibling Image Card */}
+      {/* 3. Right: Sibling Image Card (Ảnh bên phải) */}
       {hasImage && (
         <NoteDetailImageViewer
           url={displayNote.url!}
@@ -240,10 +241,10 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
           hasPortraitImage={imageAspectRatio === 'portrait'}
           className={cn(
             isAnnotationPanelOpen
-              ? 'w-full lg:flex-1 lg:max-w-2xl h-[60vh] lg:h-[88vh] lg:max-h-[850px]'
+              ? 'w-full lg:w-[380px] xl:w-[420px] shrink-0 h-[60vh] lg:h-[88vh] lg:max-h-[850px]'
               : (imageAspectRatio === 'portrait'
-                  ? 'w-full lg:w-[40%] max-w-xl lg:max-w-2xl h-[60vh] lg:h-[85vh] lg:max-h-[800px]'
-                  : 'w-full lg:w-[50%] max-w-2xl lg:max-w-3xl h-[60vh] lg:h-[85vh] lg:max-h-[800px]')
+                  ? 'w-full lg:w-[420px] xl:w-[480px] shrink-0 h-[60vh] lg:h-[85vh] lg:max-h-[800px]'
+                  : 'w-full lg:w-[480px] xl:w-[540px] shrink-0 h-[60vh] lg:h-[85vh] lg:max-h-[800px]')
           )}
         />
       )}

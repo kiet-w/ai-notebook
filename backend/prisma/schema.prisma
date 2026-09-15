@@ -92,3 +92,14 @@ model RefreshToken {
   @@index([expiresAt])
 }
 
+model StoredFile {
+  id        String   @id @default(uuid())
+  filename  String   @unique @db.Text
+  mimeType  String   @map("mime_type") @db.Text
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([filename])
+}
+

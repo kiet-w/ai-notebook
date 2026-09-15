@@ -1,7 +1,13 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import * as fs from 'fs';
 import { basename, join } from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { PrismaService } from '../prisma/prisma.service';
 import { StoredFileResult } from './types/storage.type';
 
 @Injectable()
@@ -12,7 +18,7 @@ export class StorageService {
   private readonly bucketName: string | null = null;
   private readonly publicUrl: string | null = null;
 
-  constructor() {
+  constructor(@Optional() private readonly prisma?: PrismaService) {
     const endpoint =
       process.env.STORAGE_ENDPOINT ||
       (process.env.R2_ACCOUNT_ID
@@ -44,8 +50,37 @@ export class StorageService {
       );
     } else {
       this.logger.log(
-        'Cloud Storage not configured. Using local disk storage fallback.',
+        'Cloud Storage not configured. Using database backup + local disk storage.',
       );
+    }
+  }
+
+  getUploadDir(): string {
+    return this.uploadDir;
+  }
+
+  async getFileFromDb(filename: string) {
+    if (!this.prisma) return null;
+    try {
+      const stored = await this.prisma.storedFile.findUnique({
+        where: { filename },
+      });
+      if (stored) {
+        // Caching lại vào local disk để phục vụ các lần tiếp theo cực nhanh
+        try {
+          const localPath = join(this.uploadDir, filename);
+          await fs.promises.mkdir(this.uploadDir, { recursive: true });
+          await fs.promises.writeFile(localPath, stored.data);
+        } catch (cacheErr) {
+          this.logger.debug(
+            `Could not write disk cache for ${filename}: ${String(cacheErr)}`,
+          );
+        }
+      }
+      return stored;
+    } catch (err) {
+      this.logger.warn(`Failed to fetch file ${filename} from DB: ${err}`);
+      return null;
     }
   }
 
@@ -85,8 +120,30 @@ export class StorageService {
         this.logger.error(
           `Failed to upload ${storedFilename} to Cloudflare R2: ${
             err instanceof Error ? err.message : String(err)
-          }. Falling back to local storage URL.`,
+          }. Falling back to local/DB storage URL.`,
         );
+      }
+    } else if (this.prisma) {
+      // Lưu vào Supabase DB vĩnh viễn để bảo vệ file khi Render container khởi động lại
+      try {
+        await this.prisma.storedFile.upsert({
+          where: { filename: storedFilename },
+          create: {
+            filename: storedFilename,
+            mimeType: file.mimetype || 'application/octet-stream',
+            size: file.size || file.buffer.length,
+            data: new Uint8Array(file.buffer),
+          },
+          update: {
+            data: new Uint8Array(file.buffer),
+            size: file.size || file.buffer.length,
+          },
+        });
+        this.logger.log(
+          `Backed up file ${storedFilename} to Supabase Database`,
+        );
+      } catch (err) {
+        this.logger.warn(`Could not save file to DB backup: ${err}`);
       }
     }
 

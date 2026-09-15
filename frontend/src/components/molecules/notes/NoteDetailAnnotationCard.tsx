@@ -234,8 +234,8 @@ export function NoteDetailAnnotationCard({
   return (
     <div
       className={cn(
-        'bg-white/95 dark:bg-[#0b0b0f]/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/40 rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_rgba(0,0,0,0.6)] p-5 flex flex-col shrink-0 overflow-hidden transition-all',
-        className || 'w-full lg:w-[320px] xl:w-[360px] h-[60vh] lg:h-[88vh] lg:max-h-[850px]'
+        'bg-white/95 dark:bg-[#0b0b0f]/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/40 rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_rgba(0,0,0,0.6)] p-4 sm:p-5 flex flex-col shrink-0 overflow-hidden transition-all',
+        className || 'w-full lg:w-[280px] xl:w-[300px] h-[60vh] lg:h-[88vh] lg:max-h-[850px]'
       )}
       onClick={(e) => e.stopPropagation()}
     >
@@ -297,7 +297,7 @@ export function NoteDetailAnnotationCard({
                   Chưa có ghi chú nào
                 </p>
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Bôi đen đoạn văn bản trong bài bên trái để tạo ghi chú cá nhân.
+                  Bôi đen đoạn văn bản trong bài bên cạnh để tạo ghi chú cá nhân.
                 </p>
               </div>
             </div>
