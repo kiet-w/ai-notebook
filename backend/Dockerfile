@@ -37,4 +37,4 @@ USER node
 
 EXPOSE 7860
 
-CMD ["sh", "-c", "npx prisma db push && node dist/main"]
+CMD ["sh", "-c", "npx prisma db push && node start.js"]

@@ -12,6 +12,7 @@ RUN npm install
 
 COPY backend/tsconfig*.json ./
 COPY backend/src ./src/
+COPY backend/start.js ./
 
 RUN npx prisma generate
 RUN npm run build
@@ -30,6 +31,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/start.js ./start.js
 
 RUN mkdir -p uploads && chown -R node:node /app
 
@@ -37,4 +39,4 @@ USER node
 
 EXPOSE 7860
 
-CMD ["sh", "-c", "npx prisma db push && node dist/main"]
+CMD ["sh", "-c", "npx prisma db push && node start.js"]
