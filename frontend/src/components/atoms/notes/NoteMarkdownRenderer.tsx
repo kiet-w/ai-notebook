@@ -1,6 +1,6 @@
 import React from 'react';
 import { getRelativeImageUrl } from '@/utils/image';
-import { NoteAnnotation } from '@/types/annotation';
+import { NoteAnnotation, AnnotationColor } from '@/types/annotation';
 import NoteAnnotationHighlight from './NoteAnnotationHighlight';
 
 export interface NoteMarkdownRendererProps {
@@ -8,6 +8,9 @@ export interface NoteMarkdownRendererProps {
   className?: string;
   annotations?: NoteAnnotation[];
   onAnnotationClick?: (annotation: NoteAnnotation, e: React.MouseEvent) => void;
+  onOpenNote?: (annotation: NoteAnnotation) => void;
+  onDeleteAnnotation?: (id: string) => void;
+  onChangeAnnotationColor?: (id: string, color: AnnotationColor) => void;
 }
 
 export interface InlineToken {
@@ -162,6 +165,9 @@ function renderTextWithAnnotations(
   annotations: NoteAnnotation[] = [],
   onAnnotationClick?: (annotation: NoteAnnotation, e: React.MouseEvent) => void,
   currentLineIndex?: number,
+  onOpenNote?: (annotation: NoteAnnotation) => void,
+  onDeleteAnnotation?: (id: string) => void,
+  onChangeAnnotationColor?: (id: string, color: AnnotationColor) => void,
 ) {
   if (!rawText) return null;
 
@@ -247,6 +253,9 @@ function renderTextWithAnnotations(
             key={`ann-${coveringRange.annotation.id}-${keyIdx++}`}
             annotation={coveringRange.annotation}
             onClick={(clickedAnn, e) => onAnnotationClick?.(clickedAnn, e)}
+            onOpenNote={onOpenNote}
+            onDelete={onDeleteAnnotation}
+            onChangeColor={onChangeAnnotationColor}
           >
             {renderFormattedPiece(subText, token.type, token.href)}
           </NoteAnnotationHighlight>,
@@ -272,6 +281,9 @@ export function NoteMarkdownRenderer({
   className,
   annotations = [],
   onAnnotationClick,
+  onOpenNote,
+  onDeleteAnnotation,
+  onChangeAnnotationColor,
 }: NoteMarkdownRendererProps) {
   if (!content) return null;
 
@@ -294,6 +306,9 @@ export function NoteMarkdownRenderer({
                 annotations,
                 onAnnotationClick,
                 index,
+                onOpenNote,
+                onDeleteAnnotation,
+                onChangeAnnotationColor,
               )}
             </h5>
           );
@@ -311,6 +326,9 @@ export function NoteMarkdownRenderer({
                 annotations,
                 onAnnotationClick,
                 index,
+                onOpenNote,
+                onDeleteAnnotation,
+                onChangeAnnotationColor,
               )}
             </h4>
           );
@@ -328,6 +346,9 @@ export function NoteMarkdownRenderer({
                 annotations,
                 onAnnotationClick,
                 index,
+                onOpenNote,
+                onDeleteAnnotation,
+                onChangeAnnotationColor,
               )}
             </h3>
           );
@@ -345,6 +366,9 @@ export function NoteMarkdownRenderer({
                   annotations,
                   onAnnotationClick,
                   index,
+                  onOpenNote,
+                  onDeleteAnnotation,
+                  onChangeAnnotationColor,
                 )}
               </li>
             </ul>
@@ -372,6 +396,9 @@ export function NoteMarkdownRenderer({
               annotations,
               onAnnotationClick,
               index,
+              onOpenNote,
+              onDeleteAnnotation,
+              onChangeAnnotationColor,
             )}
           </p>
         );

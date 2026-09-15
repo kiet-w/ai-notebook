@@ -177,12 +177,12 @@ export function NoteDetailBody({
   }, [activeColor, addAnnotation, annotations, propOnTextSelect]);
 
   // Open detail editor ONLY when user clicks on an already highlighted text
-  const handleAnnotationClick = useCallback((annotation: NoteAnnotation, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleAnnotationClick = useCallback((annotation: NoteAnnotation, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (propOnAnnotationClick) {
       propOnAnnotationClick(annotation);
     } else {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const rect = e ? (e.currentTarget as HTMLElement).getBoundingClientRect() : { top: 100, left: 100, width: 0, bottom: 100 };
       setPopoverState({
         isOpen: true,
         position: {
@@ -196,12 +196,12 @@ export function NoteDetailBody({
     }
   }, [propOnAnnotationClick]);
 
-  const handleSelectFromList = useCallback((annotation: NoteAnnotation, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleSelectFromList = useCallback((annotation: NoteAnnotation, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (propOnAnnotationClick) {
       propOnAnnotationClick(annotation);
     } else {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const rect = e ? (e.currentTarget as HTMLElement).getBoundingClientRect() : { top: 100, left: 100, width: 0, bottom: 100 };
       setPopoverState({
         isOpen: true,
         position: {
@@ -270,6 +270,9 @@ export function NoteDetailBody({
                 content={note.content || ''}
                 annotations={annotations}
                 onAnnotationClick={handleAnnotationClick}
+                onOpenNote={handleAnnotationClick}
+                onDeleteAnnotation={deleteAnnotation}
+                onChangeAnnotationColor={(id, color) => updateAnnotation(id, { color })}
               />
             </div>
           </div>
@@ -381,6 +384,9 @@ export function NoteDetailBody({
               content={note.content || ''}
               annotations={annotations}
               onAnnotationClick={handleAnnotationClick}
+              onOpenNote={handleAnnotationClick}
+              onDeleteAnnotation={deleteAnnotation}
+              onChangeAnnotationColor={(id, color) => updateAnnotation(id, { color })}
             />
           </div>
 

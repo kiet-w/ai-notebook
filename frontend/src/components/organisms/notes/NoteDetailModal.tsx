@@ -114,12 +114,8 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
         (data.lineIndex === undefined || ann.lineIndex === data.lineIndex)
     );
 
-    if (exists) {
-      setActiveAnnotation(exists);
-      setIsCreating(false);
-      setActiveSelectedText(exists.text);
-    } else {
-      const newAnn = addAnnotation({
+    if (!exists) {
+      addAnnotation({
         text: data.text,
         comment: '',
         color: activeColor,
@@ -127,13 +123,7 @@ export default function NoteDetailModal({ note, isOpen, onClose }: NoteDetailMod
         prefix: data.prefix,
         suffix: data.suffix,
       });
-      if (newAnn) {
-        setActiveAnnotation(newAnn);
-        setIsCreating(false);
-        setActiveSelectedText(data.text);
-      }
     }
-    setIsAnnotationPanelOpen(true);
   }, [activeColor, addAnnotation, annotations]);
 
   const handleAnnotationClick = useCallback((annotation: NoteAnnotation) => {
