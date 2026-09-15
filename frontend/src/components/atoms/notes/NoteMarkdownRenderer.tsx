@@ -123,23 +123,26 @@ export function NoteMarkdownRenderer({
       {lines.map((line, index) => {
         const trimmed = line.trim();
         if (trimmed.startsWith('#### ')) {
+          const headerContent = trimmed.replace('#### ', '');
           return (
             <h5 key={index} className="text-[11px] font-bold text-zinc-800 dark:text-zinc-250 mt-4 mb-2 uppercase tracking-wider">
-              {trimmed.replace('#### ', '')}
+              {renderTextWithAnnotations(headerContent, annotations, onAnnotationClick)}
             </h5>
           );
         }
         if (trimmed.startsWith('### ')) {
+          const headerContent = trimmed.replace('### ', '');
           return (
             <h4 key={index} className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mt-5 mb-2.5 pb-1 border-b border-zinc-200/50 dark:border-zinc-850/40">
-              {trimmed.replace('### ', '')}
+              {renderTextWithAnnotations(headerContent, annotations, onAnnotationClick)}
             </h4>
           );
         }
         if (trimmed.startsWith('## ')) {
+          const headerContent = trimmed.replace('## ', '');
           return (
             <h3 key={index} className="text-base font-semibold text-foreground mt-6 mb-3.5 tracking-tight">
-              {trimmed.replace('## ', '')}
+              {renderTextWithAnnotations(headerContent, annotations, onAnnotationClick)}
             </h3>
           );
         }

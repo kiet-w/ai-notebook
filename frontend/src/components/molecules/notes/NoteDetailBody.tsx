@@ -10,6 +10,7 @@ import NoteAttachmentCard from './NoteAttachmentCard';
 import NoteDetailSkeleton from './NoteDetailSkeleton';
 import NoteAnnotationPopover from './NoteAnnotationPopover';
 import NoteAnnotationsList from './NoteAnnotationsList';
+import { cn } from '@/lib/ui-styles';
 
 export interface NoteDetailBodyProps {
   note: Note;
@@ -24,6 +25,14 @@ interface PopoverState {
   existingAnnotation: NoteAnnotation | null;
 }
 
+const highlightColorOptions: { key: AnnotationColor; label: string; bg: string }[] = [
+  { key: 'amber', label: 'Vàng', bg: 'bg-amber-400' },
+  { key: 'blue', label: 'Xanh dương', bg: 'bg-blue-400' },
+  { key: 'emerald', label: 'Xanh lá', bg: 'bg-emerald-400' },
+  { key: 'purple', label: 'Tím', bg: 'bg-purple-400' },
+  { key: 'rose', label: 'Đỏ hồng', bg: 'bg-rose-400' },
+];
+
 export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
   const { t } = useI18n();
   const {
@@ -33,6 +42,7 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
     deleteAnnotation,
   } = useNoteAnnotations(note.id);
 
+  const [activeColor, setActiveColor] = useState<AnnotationColor>('amber');
   const [popoverState, setPopoverState] = useState<PopoverState>({
     isOpen: false,
     position: { top: 0, left: 0 },
@@ -42,6 +52,7 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
 
   const contentContainerRef = useRef<HTMLDivElement>(null);
 
+  // Instant auto-highlight on selection without intrusive popover
   const handleMouseUp = useCallback(() => {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) return;
@@ -51,26 +62,21 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
 
     // Check if selection is inside content container
     if (contentContainerRef.current && contentContainerRef.current.contains(selection.anchorNode)) {
-      try {
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          setPopoverState({
-            isOpen: true,
-            position: {
-              top: Math.max(80, rect.top - 10),
-              left: Math.min(window.innerWidth - 180, Math.max(180, rect.left + rect.width / 2)),
-            },
-            selectedText: text,
-            existingAnnotation: null,
-          });
-        }
-      } catch (err) {
-        console.warn('Failed to calculate selection position:', err);
+      // Check if this exact text is already highlighted
+      const exists = annotations.some((ann) => ann.text === text);
+      if (!exists) {
+        addAnnotation({
+          text,
+          comment: '',
+          color: activeColor,
+        });
       }
+      // Clear native selection so custom border highlight shines through
+      selection.removeAllRanges();
     }
-  }, []);
+  }, [activeColor, addAnnotation, annotations]);
 
+  // Open detail popover ONLY when user clicks on an already highlighted text
   const handleAnnotationClick = useCallback((annotation: NoteAnnotation, e: React.MouseEvent) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -100,7 +106,6 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
 
   const handleSaveAnnotation = useCallback((data: { text: string; comment: string; color: AnnotationColor }) => {
     addAnnotation(data);
-    // Clear selection
     window.getSelection()?.removeAllRanges();
   }, [addAnnotation]);
 
@@ -124,14 +129,36 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
             onMouseUp={handleMouseUp}
             className="lg:col-span-7 space-y-6 lg:h-full lg:overflow-y-auto p-4 sm:p-6 lg:p-8 lg:pr-6"
           >
-            <div className="flex items-center justify-between select-none mb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 select-none mb-2">
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
                 {t('notes.fullContentAnalysis') || 'Nội dung ghi chú'}
               </p>
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 italic">
-                {t('notes.selectTextToAnnotate') || 'Bôi đen văn bản để ghi chú'}
-              </span>
+              
+              {/* Highlight Pen Color Selector */}
+              <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800/70 px-2 py-1 rounded-full border border-zinc-200/60 dark:border-zinc-700/50">
+                <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                  Bút highlight:
+                </span>
+                <div className="flex items-center gap-1">
+                  {highlightColorOptions.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setActiveColor(opt.key)}
+                      className={cn(
+                        'w-3.5 h-3.5 rounded-full transition-transform',
+                        opt.bg,
+                        activeColor === opt.key
+                          ? 'ring-2 ring-offset-1 ring-zinc-900 dark:ring-zinc-100 dark:ring-offset-zinc-800 scale-110'
+                          : 'opacity-60 hover:opacity-100 hover:scale-105'
+                      )}
+                      title={`Đổi màu bút: ${opt.label}`}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
+
             <div className="p-5 sm:p-6 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-zinc-800/30 space-y-2">
               <NoteMarkdownRenderer
                 content={note.content || ''}
@@ -193,14 +220,36 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
           onMouseUp={handleMouseUp}
           className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 max-w-4xl mx-auto w-full"
         >
-          <div className="flex items-center justify-between select-none mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 select-none mb-2">
             <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
               {t('notes.fullContentAnalysis') || 'Nội dung ghi chú'}
             </p>
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 italic">
-              {t('notes.selectTextToAnnotate') || 'Bôi đen văn bản để ghi chú'}
-            </span>
+            
+            {/* Highlight Pen Color Selector */}
+            <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800/70 px-2 py-1 rounded-full border border-zinc-200/60 dark:border-zinc-700/50">
+              <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                Bút highlight:
+              </span>
+              <div className="flex items-center gap-1">
+                {highlightColorOptions.map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setActiveColor(opt.key)}
+                    className={cn(
+                      'w-3.5 h-3.5 rounded-full transition-transform',
+                      opt.bg,
+                      activeColor === opt.key
+                        ? 'ring-2 ring-offset-1 ring-zinc-900 dark:ring-zinc-100 dark:ring-offset-zinc-800 scale-110'
+                        : 'opacity-60 hover:opacity-100 hover:scale-105'
+                    )}
+                    title={`Đổi màu bút: ${opt.label}`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
+
           <div className="p-6 sm:p-8 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-zinc-800/30 space-y-2">
             <NoteMarkdownRenderer
               content={note.content || ''}
@@ -211,7 +260,7 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
         </div>
       )}
 
-      {/* Floating Annotation Popover */}
+      {/* Floating Annotation Popover - only displayed when clicked on a highlight to view/edit/delete */}
       {popoverState.isOpen && (
         <NoteAnnotationPopover
           position={popoverState.position}
