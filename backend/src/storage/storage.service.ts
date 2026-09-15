@@ -7,6 +7,7 @@ import {
 import * as fs from 'fs';
 import { basename, join } from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { StoredFileResult } from './types/storage.type';
 
@@ -17,8 +18,31 @@ export class StorageService {
   private readonly s3Client: S3Client | null = null;
   private readonly bucketName: string | null = null;
   private readonly publicUrl: string | null = null;
+  private readonly supabaseUrl: string | null = null;
+  private readonly supabaseKey: string | null = null;
 
   constructor(@Optional() private readonly prisma?: PrismaService) {
+    // 1. Cấu hình Supabase Storage qua REST API (Đơn giản nhất, chỉ cần Service Role Key)
+    const rawSupabaseUrl =
+      process.env.SUPABASE_URL ||
+      (process.env.DATABASE_URL?.match(/postgres\.([a-z0-9]+):/)?.[1]
+        ? `https://${process.env.DATABASE_URL.match(/postgres\.([a-z0-9]+):/)?.[1]}.supabase.co`
+        : undefined);
+    const rawSupabaseKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_KEY ||
+      process.env.SUPABASE_KEY;
+
+    if (rawSupabaseUrl && rawSupabaseKey) {
+      this.supabaseUrl = rawSupabaseUrl.replace(/\/+$/, '');
+      this.supabaseKey = rawSupabaseKey;
+      this.bucketName = process.env.STORAGE_BUCKET_NAME || 'notes';
+      this.logger.log(
+        `Supabase Storage REST API initialized for bucket: ${this.bucketName}`,
+      );
+    }
+
+    // 2. Cấu hình S3-compatible (Cloudflare R2 hoặc Supabase S3)
     const endpoint =
       process.env.STORAGE_ENDPOINT ||
       (process.env.R2_ACCOUNT_ID
@@ -46,11 +70,11 @@ export class StorageService {
       this.bucketName = bucketName;
       this.publicUrl = publicUrl ? publicUrl.replace(/\/$/, '') : null;
       this.logger.log(
-        `Cloud Object Storage (Supabase Storage / S3 / R2) initialized for bucket: ${bucketName}`,
+        `Cloud Object Storage (S3 / R2) initialized for bucket: ${bucketName}`,
       );
-    } else {
+    } else if (!this.supabaseKey) {
       this.logger.log(
-        'Cloud Storage not configured. Using database backup + local disk storage.',
+        'Cloud Storage Bucket not configured. Using database backup + local disk storage.',
       );
     }
   }
@@ -100,8 +124,36 @@ export class StorageService {
     // Luôn lưu bản sao local để parser (PDF, Docx, Text) có thể đọc và trích xuất nội dung
     await fs.promises.writeFile(filePath, file.buffer);
 
-    // Nếu Cloudflare R2 được cấu hình, upload lên Cloudflare R2 để lưu trữ vĩnh viễn
-    if (this.s3Client && this.bucketName) {
+    let isUploadedToBucket = false;
+
+    // 1. Ưu tiên Upload lên Supabase Storage qua REST API (Chuẩn nhất, không tốn DB)
+    if (this.supabaseUrl && this.supabaseKey) {
+      try {
+        const bucket = this.bucketName || 'notes';
+        const uploadUrl = `${this.supabaseUrl}/storage/v1/object/${bucket}/${storedFilename}`;
+        await axios.post(uploadUrl, file.buffer, {
+          headers: {
+            Authorization: `Bearer ${this.supabaseKey}`,
+            'Content-Type': file.mimetype || 'application/octet-stream',
+            'x-upsert': 'true',
+          },
+        });
+        fileUrl = `${this.supabaseUrl}/storage/v1/object/public/${bucket}/${storedFilename}`;
+        isUploadedToBucket = true;
+        this.logger.log(
+          `Uploaded file ${storedFilename} to Supabase Storage Bucket`,
+        );
+      } catch (err) {
+        this.logger.error(
+          `Failed to upload ${storedFilename} to Supabase Storage: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
+    }
+
+    // 2. Nếu có cấu hình S3 / Cloudflare R2
+    if (!isUploadedToBucket && this.s3Client && this.bucketName) {
       try {
         await this.s3Client.send(
           new PutObjectCommand({
@@ -115,16 +167,19 @@ export class StorageService {
         if (this.publicUrl) {
           fileUrl = `${this.publicUrl}/${storedFilename}`;
         }
-        this.logger.log(`Uploaded file ${storedFilename} to Cloudflare R2`);
+        isUploadedToBucket = true;
+        this.logger.log(`Uploaded file ${storedFilename} to S3/R2 Bucket`);
       } catch (err) {
         this.logger.error(
-          `Failed to upload ${storedFilename} to Cloudflare R2: ${
+          `Failed to upload ${storedFilename} to S3/R2: ${
             err instanceof Error ? err.message : String(err)
-          }. Falling back to local/DB storage URL.`,
+          }`,
         );
       }
-    } else if (this.prisma) {
-      // Lưu vào Supabase DB vĩnh viễn để bảo vệ file khi Render container khởi động lại
+    }
+
+    // 3. Fallback: Nếu CHƯA cấu hình bất kỳ bucket nào, lưu tạm vào DB để tránh mất file trên Render
+    if (!isUploadedToBucket && this.prisma) {
       try {
         await this.prisma.storedFile.upsert({
           where: { filename: storedFilename },
@@ -140,7 +195,7 @@ export class StorageService {
           },
         });
         this.logger.log(
-          `Backed up file ${storedFilename} to Supabase Database`,
+          `No bucket configured. Backed up file ${storedFilename} to Database fallback`,
         );
       } catch (err) {
         this.logger.warn(`Could not save file to DB backup: ${err}`);
