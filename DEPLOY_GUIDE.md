@@ -15,17 +15,26 @@ Hướng dẫn chi tiết từng bước đưa ứng dụng **AI Notebook** lên
 
 ---
 
-## 📋 Bước 1: Tạo Database PostgreSQL Miễn Phí trên Neon.tech
+## 📋 Bước 1: Lấy Chuỗi Kết Nối PostgreSQL từ Supabase
 
-1. Truy cập [neon.tech](https://neon.tech) và đăng ký tài khoản miễn phí (bằng GitHub hoặc Google).
-2. Nhấn **"Create Project"**:
-   - Project name: `ai-notebook`
-   - Region: Chọn vùng gần bạn (ví dụ: `Singapore` hoặc `ap-southeast-1` để có tốc độ tốt nhất tại Việt Nam).
-3. Sau khi tạo xong, ở màn hình **Connection Details**, sao chép chuỗi kết nối:
-   - Dạng: `postgresql://neondb_owner:xxxx@ep-xyz.ap-southeast-1.aws.neon.tech/neondb?sslmode=require`
-4. Đây chính là giá trị cho biến `DATABASE_URL` và `DIRECT_URL`.
+Vì bạn đã có sẵn dự án trên **Supabase**, bạn không cần tạo database mới. Hãy lấy 2 chuỗi kết nối từ Supabase:
+
+1. Đăng nhập vào [Supabase Dashboard](https://supabase.com/dashboard) và mở project của bạn.
+2. Nhấn vào **Project Settings** (biểu tượng bánh răng ở góc dưới bên trái) -> Chọn tab **Database**.
+3. Kéo xuống mục **Connection string** (hoặc **Connecting to your database**):
+   - Chọn chế độ **URI**.
+   - **`DATABASE_URL` (Connection Pooler)**:
+     - Chọn tab **Transaction** (hoặc **Session**) trên Supabase.
+     - Sao chép chuỗi kết nối (port thường là `6543` hoặc `5432`), ví dụ:
+       `postgresql://postgres.yourprojectref:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres`
+   - **`DIRECT_URL` (Direct Connection)**:
+     - Tắt tùy chọn Pooler hoặc chọn tab **Direct connection** (port `5432`), ví dụ:
+       `postgresql://postgres:[YOUR-PASSWORD]@db.yourprojectref.supabase.co:5432/postgres`
+4. Thay thế `[YOUR-PASSWORD]` bằng mật khẩu cơ sở dữ liệu Supabase của bạn.
+> 💡 *Mẹo:* Nếu không nhớ mật khẩu, bạn có thể nhấn nút **Reset database password** ngay tại trang Database Settings của Supabase để đặt lại mật khẩu mới.
 
 ---
+
 
 ## 📦 Bước 2: Tạo Bucket Lưu Trữ Ảnh/Tệp trên Cloudflare R2 (10GB Free)
 
