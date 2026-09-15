@@ -8,6 +8,7 @@ export class NoteMapper {
     if (url && url.startsWith('/uploads/')) {
       const baseUrl =
         process.env.BACKEND_URL ||
+        process.env.RENDER_EXTERNAL_URL ||
         `http://localhost:${process.env.PORT || '3001'}`;
       url = `${baseUrl}${url}`;
     }

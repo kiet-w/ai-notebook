@@ -161,17 +161,22 @@ const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const API_URL = rawApiUrl.replace(/\/+$/, '');
 
 /**
- * Rewrites relative backend URLs (e.g. /uploads/foo.png) to include the backend API URL.
+ * Rewrites relative backend URLs (e.g. /uploads/foo.png) or localhost URLs (e.g. http://localhost:10000/uploads/...)
+ * to include the correct backend API URL.
  * Preserves remote URLs (e.g. Supabase Storage, Cloudflare R2, S3).
  */
 export function getRelativeImageUrl(url: string | null | undefined): string {
   if (!url) return '';
+  // If it's a localhost URL from backend fallback (e.g. http://localhost:10000/uploads/...)
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(url)) {
+    const path = url.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, '');
+    return `${API_URL}${path}`;
+  }
+  // If it's an external remote URL (like Supabase storage or R2), keep it as-is
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    if (url.includes('localhost:3001') && API_URL && !API_URL.includes('localhost:3001')) {
-      return url.replace(/https?:\/\/localhost:3001/, API_URL);
-    }
     return url;
   }
+  // If it's a relative path (/uploads/...), prepend API_URL
   if (url.startsWith('/')) {
     return `${API_URL}${url}`;
   }
