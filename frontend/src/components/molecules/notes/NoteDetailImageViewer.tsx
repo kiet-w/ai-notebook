@@ -12,6 +12,7 @@ export interface NoteDetailImageViewerProps {
   title?: string;
   isProcessing?: boolean;
   hasPortraitImage?: boolean;
+  className?: string;
 }
 
 export function NoteDetailImageViewer({
@@ -19,6 +20,7 @@ export function NoteDetailImageViewer({
   title,
   isProcessing,
   hasPortraitImage,
+  className,
 }: NoteDetailImageViewerProps) {
   const { t } = useI18n();
   const [isZoomed, setIsZoomed] = useState(false);
@@ -28,10 +30,12 @@ export function NoteDetailImageViewer({
   return (
     <div 
       className={cn(
-        'bg-white/95 dark:bg-[#0b0b0f]/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/40 rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_rgba(0,0,0,0.6)] p-6 flex flex-col shrink-0 relative overflow-hidden',
-        hasPortraitImage 
-          ? 'w-full lg:w-[40%] max-w-xl lg:max-w-2xl h-[60vh] lg:h-[85vh] lg:max-h-[800px]' 
-          : 'w-full lg:w-[50%] max-w-2xl lg:max-w-3xl h-[60vh] lg:h-[85vh] lg:max-h-[800px]'
+        'bg-white/95 dark:bg-[#0b0b0f]/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/40 rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_rgba(0,0,0,0.6)] p-6 flex flex-col shrink-0 relative overflow-hidden transition-all',
+        className ? className : (
+          hasPortraitImage 
+            ? 'w-full lg:w-[40%] max-w-xl lg:max-w-2xl h-[60vh] lg:h-[85vh] lg:max-h-[800px]' 
+            : 'w-full lg:w-[50%] max-w-2xl lg:max-w-3xl h-[60vh] lg:h-[85vh] lg:max-h-[800px]'
+        )
       )}
       onClick={(e) => e.stopPropagation()}
     >

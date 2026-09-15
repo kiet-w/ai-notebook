@@ -11,12 +11,25 @@ import NoteDetailSkeleton from './NoteDetailSkeleton';
 import NoteAnnotationPopover from './NoteAnnotationPopover';
 import NoteAnnotationsList from './NoteAnnotationsList';
 import { cn } from '@/lib/ui-styles';
+import { MessageSquare } from 'lucide-react';
 
 export interface NoteDetailBodyProps {
   note: Note;
   loading: boolean;
   hasDoc: boolean;
   hasImage?: boolean;
+  annotations?: NoteAnnotation[];
+  onAnnotationClick?: (annotation: NoteAnnotation) => void;
+  onTextSelect?: (data: {
+    text: string;
+    lineIndex?: number;
+    prefix?: string;
+    suffix?: string;
+  }) => void;
+  activeColor?: AnnotationColor;
+  onChangeActiveColor?: (color: AnnotationColor) => void;
+  isAnnotationPanelOpen?: boolean;
+  onToggleAnnotationPanel?: () => void;
 }
 
 interface PopoverState {
@@ -34,16 +47,34 @@ const highlightColorOptions: { key: AnnotationColor; label: string; bg: string }
   { key: 'rose', label: 'Đỏ hồng', bg: 'bg-rose-400' },
 ];
 
-export function NoteDetailBody({ note, loading, hasDoc, hasImage }: NoteDetailBodyProps) {
+export function NoteDetailBody({
+  note,
+  loading,
+  hasDoc,
+  hasImage,
+  annotations: propAnnotations,
+  onAnnotationClick: propOnAnnotationClick,
+  onTextSelect: propOnTextSelect,
+  activeColor: propActiveColor,
+  onChangeActiveColor: propOnChangeActiveColor,
+  isAnnotationPanelOpen,
+  onToggleAnnotationPanel,
+}: NoteDetailBodyProps) {
   const { t } = useI18n();
-  const {
-    annotations,
-    addAnnotation,
-    updateAnnotation,
-    deleteAnnotation,
-  } = useNoteAnnotations(note.id);
+  const localAnnotationsHook = useNoteAnnotations(propAnnotations ? undefined : note.id);
 
-  const [activeColor, setActiveColor] = useState<AnnotationColor>('amber');
+  const annotations = propAnnotations || localAnnotationsHook.annotations;
+  const addAnnotation = localAnnotationsHook.addAnnotation;
+  const updateAnnotation = localAnnotationsHook.updateAnnotation;
+  const deleteAnnotation = localAnnotationsHook.deleteAnnotation;
+
+  const [localActiveColor, setLocalActiveColor] = useState<AnnotationColor>('amber');
+  const activeColor = propActiveColor || localActiveColor;
+  const setActiveColor = (col: AnnotationColor) => {
+    if (propOnChangeActiveColor) propOnChangeActiveColor(col);
+    setLocalActiveColor(col);
+  };
+
   const [popoverState, setPopoverState] = useState<PopoverState>({
     isOpen: false,
     position: { top: 0, left: 0 },
@@ -113,59 +144,76 @@ export function NoteDetailBody({ note, loading, hasDoc, hasImage }: NoteDetailBo
       );
 
       if (!exists) {
-        const newAnn = addAnnotation({
-          text,
-          comment: '',
-          color: activeColor,
-          lineIndex,
-          prefix,
-          suffix,
-        });
-
-        if (newAnn) {
-          setPopoverState({
-            isOpen: true,
-            position: { top: 0, left: 0 },
-            selectedText: text,
-            existingAnnotation: newAnn,
+        if (propOnTextSelect) {
+          propOnTextSelect({
+            text,
+            lineIndex,
+            prefix,
+            suffix,
           });
+        } else {
+          const newAnn = addAnnotation({
+            text,
+            comment: '',
+            color: activeColor,
+            lineIndex,
+            prefix,
+            suffix,
+          });
+
+          if (newAnn) {
+            setPopoverState({
+              isOpen: true,
+              position: { top: 0, left: 0 },
+              selectedText: text,
+              existingAnnotation: newAnn,
+            });
+          }
         }
       }
       // Clear native selection so custom border highlight shines through
       selection.removeAllRanges();
     }
-  }, [activeColor, addAnnotation, annotations]);
+  }, [activeColor, addAnnotation, annotations, propOnTextSelect]);
 
   // Open detail editor ONLY when user clicks on an already highlighted text
   const handleAnnotationClick = useCallback((annotation: NoteAnnotation, e: React.MouseEvent) => {
     e.stopPropagation();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setPopoverState({
-      isOpen: true,
-      position: {
-        top: rect.top,
-        left: rect.left + rect.width / 2,
-        bottom: rect.bottom,
-      },
-      selectedText: annotation.text,
-      existingAnnotation: annotation,
-    });
-  }, []);
+    if (propOnAnnotationClick) {
+      propOnAnnotationClick(annotation);
+    } else {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setPopoverState({
+        isOpen: true,
+        position: {
+          top: rect.top,
+          left: rect.left + rect.width / 2,
+          bottom: rect.bottom,
+        },
+        selectedText: annotation.text,
+        existingAnnotation: annotation,
+      });
+    }
+  }, [propOnAnnotationClick]);
 
   const handleSelectFromList = useCallback((annotation: NoteAnnotation, e: React.MouseEvent) => {
     e.stopPropagation();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setPopoverState({
-      isOpen: true,
-      position: {
-        top: rect.top,
-        left: rect.left + rect.width / 2,
-        bottom: rect.bottom,
-      },
-      selectedText: annotation.text,
-      existingAnnotation: annotation,
-    });
-  }, []);
+    if (propOnAnnotationClick) {
+      propOnAnnotationClick(annotation);
+    } else {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setPopoverState({
+        isOpen: true,
+        position: {
+          top: rect.top,
+          left: rect.left + rect.width / 2,
+          bottom: rect.bottom,
+        },
+        selectedText: annotation.text,
+        existingAnnotation: annotation,
+      });
+    }
+  }, [propOnAnnotationClick]);
 
   if (loading) {
     return <NoteDetailSkeleton />;
@@ -283,28 +331,48 @@ export function NoteDetailBody({ note, loading, hasDoc, hasImage }: NoteDetailBo
               {t('notes.fullContentAnalysis') || 'Nội dung ghi chú'}
             </p>
             
-            {/* Highlight Pen Color Selector */}
-            <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800/70 px-2 py-1 rounded-full border border-zinc-200/60 dark:border-zinc-700/50">
-              <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-                Bút highlight:
-              </span>
-              <div className="flex items-center gap-1">
-                {highlightColorOptions.map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => setActiveColor(opt.key)}
-                    className={cn(
-                      'w-3.5 h-3.5 rounded-full transition-transform',
-                      opt.bg,
-                      activeColor === opt.key
-                        ? 'ring-2 ring-offset-1 ring-zinc-900 dark:ring-zinc-100 dark:ring-offset-zinc-800 scale-110'
-                        : 'opacity-60 hover:opacity-100 hover:scale-105'
-                    )}
-                    title={`Đổi màu bút: ${opt.label}`}
-                  />
-                ))}
+            <div className="flex items-center gap-2">
+              {/* Highlight Pen Color Selector */}
+              <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800/70 px-2 py-1 rounded-full border border-zinc-200/60 dark:border-zinc-700/50">
+                <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                  Bút highlight:
+                </span>
+                <div className="flex items-center gap-1">
+                  {highlightColorOptions.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setActiveColor(opt.key)}
+                      className={cn(
+                        'w-3.5 h-3.5 rounded-full transition-transform',
+                        opt.bg,
+                        activeColor === opt.key
+                          ? 'ring-2 ring-offset-1 ring-zinc-900 dark:ring-zinc-100 dark:ring-offset-zinc-800 scale-110'
+                          : 'opacity-60 hover:opacity-100 hover:scale-105'
+                      )}
+                      title={`Đổi màu bút: ${opt.label}`}
+                    />
+                  ))}
+                </div>
               </div>
+
+              {/* Toggle Annotation Panel Button for Note with Image */}
+              {hasImage && onToggleAnnotationPanel && (
+                <button
+                  type="button"
+                  onClick={onToggleAnnotationPanel}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all border',
+                    isAnnotationPanelOpen
+                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 shadow-sm'
+                      : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200/60 dark:border-zinc-700/50 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                  )}
+                  title={isAnnotationPanelOpen ? 'Thu gọn bảng ghi chú ở giữa' : 'Mở bảng ghi chú ở giữa'}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Ghi chú {annotations.length > 0 ? `(${annotations.length})` : ''}</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -317,7 +385,7 @@ export function NoteDetailBody({ note, loading, hasDoc, hasImage }: NoteDetailBo
           </div>
 
           {/* If there are annotations or summary in single-column mode, render them cleanly below without changing column width */}
-          {(note.summary || (note.bullets && note.bullets.length > 0) || annotations.length > 0) && (
+          {(note.summary || (note.bullets && note.bullets.length > 0) || (!hasImage && annotations.length > 0)) && (
             <div className="space-y-6 pt-4 border-t border-zinc-200/50 dark:border-zinc-800/40">
               {note.summary && (
                 <div>
@@ -346,7 +414,7 @@ export function NoteDetailBody({ note, loading, hasDoc, hasImage }: NoteDetailBo
                 </div>
               )}
 
-              {annotations.length > 0 && (
+              {!hasImage && annotations.length > 0 && (
                 <div className="pt-2">
                   <NoteAnnotationsList
                     annotations={annotations}
@@ -360,8 +428,8 @@ export function NoteDetailBody({ note, loading, hasDoc, hasImage }: NoteDetailBo
         </div>
       )}
 
-      {/* Centered Annotation Popup Modal */}
-      {popoverState.isOpen && (
+      {/* Centered Annotation Popup Modal (fallback for single-column / non-image notes) */}
+      {!hasImage && popoverState.isOpen && (
         <NoteAnnotationPopover
           selectedText={popoverState.selectedText}
           existingAnnotation={popoverState.existingAnnotation}

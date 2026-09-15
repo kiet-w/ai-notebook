@@ -40,3 +40,5 @@ export * from './NoteAnnotationPopover';
 export { default as NoteAnnotationPopover } from './NoteAnnotationPopover';
 export * from './NoteAnnotationsList';
 export { default as NoteAnnotationsList } from './NoteAnnotationsList';
+export * from './NoteDetailAnnotationCard';
+export { default as NoteDetailAnnotationCard } from './NoteDetailAnnotationCard';
