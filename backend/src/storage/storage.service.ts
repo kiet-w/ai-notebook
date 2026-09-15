@@ -13,16 +13,25 @@ export class StorageService {
   private readonly publicUrl: string | null = null;
 
   constructor() {
-    const accountId = process.env.R2_ACCOUNT_ID;
-    const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-    const bucketName = process.env.R2_BUCKET_NAME;
-    const publicUrl = process.env.R2_PUBLIC_URL;
+    const endpoint =
+      process.env.STORAGE_ENDPOINT ||
+      (process.env.R2_ACCOUNT_ID
+        ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+        : undefined);
+    const accessKeyId =
+      process.env.STORAGE_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID;
+    const secretAccessKey =
+      process.env.STORAGE_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY;
+    const bucketName =
+      process.env.STORAGE_BUCKET_NAME || process.env.R2_BUCKET_NAME;
+    const publicUrl =
+      process.env.STORAGE_PUBLIC_URL || process.env.R2_PUBLIC_URL;
+    const region = process.env.STORAGE_REGION || 'auto';
 
-    if (accountId && accessKeyId && secretAccessKey && bucketName) {
+    if (endpoint && accessKeyId && secretAccessKey && bucketName) {
       this.s3Client = new S3Client({
-        region: 'auto',
-        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+        region,
+        endpoint,
         credentials: {
           accessKeyId,
           secretAccessKey,
@@ -31,11 +40,11 @@ export class StorageService {
       this.bucketName = bucketName;
       this.publicUrl = publicUrl ? publicUrl.replace(/\/$/, '') : null;
       this.logger.log(
-        `Cloudflare R2 Storage initialized for bucket: ${bucketName}`,
+        `Cloud Object Storage (Supabase Storage / S3 / R2) initialized for bucket: ${bucketName}`,
       );
     } else {
       this.logger.log(
-        'Cloudflare R2 not configured. Using local disk storage fallback.',
+        'Cloud Storage not configured. Using local disk storage fallback.',
       );
     }
   }

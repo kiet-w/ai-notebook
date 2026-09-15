@@ -41,11 +41,14 @@ async function bootstrap() {
         origin,
       );
       const isPagesDev = /^https:\/\/[a-zA-Z0-9-.]+\.pages\.dev$/.test(origin);
+      const isVercelApp = /^https:\/\/[a-zA-Z0-9-.]+\.vercel\.app$/.test(
+        origin,
+      );
       const isExplicitOrigin = allowedOrigins.includes(
         origin.replace(/\/$/, ''),
       );
 
-      if (isLocalhost || isPagesDev || isExplicitOrigin) {
+      if (isLocalhost || isPagesDev || isVercelApp || isExplicitOrigin) {
         callback(null, true);
       } else {
         callback(new Error(`Not allowed by CORS: ${origin}`));
