@@ -62,4 +62,36 @@ describe('NoteMarkdownRenderer', () => {
       );
     }
   });
+
+  it('should only highlight the specific occurrence when word appears multiple times', () => {
+    const markdown = [
+      'Những người thành công luôn có những thói quen tốt.',
+      'Những thói quen này giúp họ phát triển.',
+    ].join('\n');
+
+    // Only highlight the second "những" on line 0
+    const mockAnnotation: NoteAnnotation = {
+      id: 'ann-2',
+      noteId: 'note-1',
+      text: 'những',
+      comment: 'focus on the second one',
+      color: 'blue',
+      lineIndex: 0,
+      prefix: 'luôn có ',
+      suffix: ' thói quen',
+      createdAt: new Date().toISOString(),
+    };
+
+    render(
+      <NoteMarkdownRenderer
+        content={markdown}
+        annotations={[mockAnnotation]}
+      />,
+    );
+
+    // There should only be ONE mark element across the whole document
+    const markElements = document.querySelectorAll('mark');
+    expect(markElements).toHaveLength(1);
+    expect(markElements[0].textContent).toContain('những');
+  });
 });

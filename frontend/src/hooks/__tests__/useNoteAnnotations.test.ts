@@ -45,6 +45,9 @@ describe('useNoteAnnotations', () => {
         text: 'Selected text here',
         comment: 'My personal insight',
         color: 'blue',
+        lineIndex: 2,
+        prefix: 'Before text ',
+        suffix: ' after text',
       });
     });
 
@@ -52,12 +55,16 @@ describe('useNoteAnnotations', () => {
     expect(result.current.annotations[0].text).toBe('Selected text here');
     expect(result.current.annotations[0].comment).toBe('My personal insight');
     expect(result.current.annotations[0].color).toBe('blue');
+    expect(result.current.annotations[0].lineIndex).toBe(2);
+    expect(result.current.annotations[0].prefix).toBe('Before text ');
+    expect(result.current.annotations[0].suffix).toBe(' after text');
 
     const stored = JSON.parse(
       localStorage.getItem(getAnnotationStorageKey('note-1')) || '[]',
     );
     expect(stored).toHaveLength(1);
     expect(stored[0].text).toBe('Selected text here');
+    expect(stored[0].lineIndex).toBe(2);
   });
 
   it('should update an existing annotation', () => {

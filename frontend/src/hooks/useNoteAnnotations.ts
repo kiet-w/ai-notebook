@@ -48,7 +48,14 @@ export function useNoteAnnotations(noteId?: string) {
   );
 
   const addAnnotation = useCallback(
-    (data: { text: string; comment: string; color?: AnnotationColor }) => {
+    (data: {
+      text: string;
+      comment: string;
+      color?: AnnotationColor;
+      lineIndex?: number;
+      prefix?: string;
+      suffix?: string;
+    }) => {
       if (!noteId || !data.text.trim()) return null;
 
       const newAnnotation: NoteAnnotation = {
@@ -57,6 +64,9 @@ export function useNoteAnnotations(noteId?: string) {
         text: data.text.trim(),
         comment: data.comment.trim(),
         color: data.color || 'amber',
+        lineIndex: data.lineIndex,
+        prefix: data.prefix,
+        suffix: data.suffix,
         createdAt: new Date().toISOString(),
       };
 

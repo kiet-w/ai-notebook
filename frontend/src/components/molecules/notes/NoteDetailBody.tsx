@@ -61,14 +61,64 @@ export function NoteDetailBody({ note, loading, hasDoc }: NoteDetailBodyProps) {
     if (!text || text.length < 2) return;
 
     // Check if selection is inside content container
-    if (contentContainerRef.current && contentContainerRef.current.contains(selection.anchorNode)) {
-      // Check if this exact text is already highlighted
-      const exists = annotations.some((ann) => ann.text === text);
+    if (
+      contentContainerRef.current &&
+      contentContainerRef.current.contains(selection.anchorNode)
+    ) {
+      let lineIndex: number | undefined;
+      let prefix: string | undefined;
+      let suffix: string | undefined;
+
+      // Find enclosing element with data-line-index
+      let element: HTMLElement | null =
+        selection.anchorNode instanceof HTMLElement
+          ? selection.anchorNode
+          : selection.anchorNode?.parentElement ?? null;
+
+      while (element && element !== contentContainerRef.current) {
+        const attr = element.getAttribute('data-line-index');
+        if (attr !== null) {
+          lineIndex = parseInt(attr, 10);
+          break;
+        }
+        element = element.parentElement;
+      }
+
+      if (element && selection.rangeCount > 0) {
+        try {
+          const range = selection.getRangeAt(0);
+          const preRange = document.createRange();
+          preRange.selectNodeContents(element);
+          preRange.setEnd(range.startContainer, range.startOffset);
+          const preText = preRange.toString();
+          prefix = preText.slice(-30);
+
+          const postRange = document.createRange();
+          postRange.selectNodeContents(element);
+          postRange.setStart(range.endContainer, range.endOffset);
+          const postText = postRange.toString();
+          suffix = postText.slice(0, 30);
+        } catch {
+          // fallback if range extraction fails
+        }
+      }
+
+      // Check if this exact annotation already exists at the same line/position
+      const exists = annotations.some(
+        (ann) =>
+          ann.text === text &&
+          (lineIndex === undefined || ann.lineIndex === lineIndex) &&
+          (!prefix || ann.prefix === prefix),
+      );
+
       if (!exists) {
         addAnnotation({
           text,
           comment: '',
           color: activeColor,
+          lineIndex,
+          prefix,
+          suffix,
         });
       }
       // Clear native selection so custom border highlight shines through

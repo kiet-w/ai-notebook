@@ -6,5 +6,8 @@ export interface NoteAnnotation {
   text: string;
   comment: string;
   color: AnnotationColor;
+  lineIndex?: number;
+  prefix?: string;
+  suffix?: string;
   createdAt: string;
 }

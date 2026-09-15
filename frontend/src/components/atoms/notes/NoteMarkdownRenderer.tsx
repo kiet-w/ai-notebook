@@ -45,40 +45,125 @@ export function parseInlineMarkdown(text: string) {
 
 export const parseBoldText = parseInlineMarkdown;
 
+interface MatchRange {
+  start: number;
+  end: number;
+  annotation: NoteAnnotation;
+}
+
+function findBestMatchIndex(
+  text: string,
+  targetText: string,
+  prefix?: string,
+  suffix?: string,
+  usedRanges: { start: number; end: number }[] = [],
+): number {
+  if (!text || !targetText) return -1;
+
+  const candidates: number[] = [];
+  let pos = 0;
+  while (pos < text.length) {
+    const idx = text.indexOf(targetText, pos);
+    if (idx === -1) break;
+    const end = idx + targetText.length;
+    const overlaps = usedRanges.some(
+      (r) => (idx >= r.start && idx < r.end) || (end > r.start && end <= r.end),
+    );
+    if (!overlaps) {
+      candidates.push(idx);
+    }
+    pos = idx + 1;
+  }
+
+  if (candidates.length === 0) return -1;
+  if (candidates.length === 1 && !prefix && !suffix) return candidates[0];
+
+  let bestIdx = candidates[0];
+  let highestScore = -1;
+
+  for (const idx of candidates) {
+    let score = 0;
+    const end = idx + targetText.length;
+
+    if (prefix) {
+      const textBefore = text.slice(Math.max(0, idx - prefix.length), idx);
+      for (let i = 1; i <= Math.min(prefix.length, textBefore.length); i++) {
+        if (prefix.slice(-i) === textBefore.slice(-i)) {
+          score += i * 2;
+        }
+      }
+    }
+
+    if (suffix) {
+      const textAfter = text.slice(end, end + suffix.length);
+      for (let i = 1; i <= Math.min(suffix.length, textAfter.length); i++) {
+        if (suffix.slice(0, i) === textAfter.slice(0, i)) {
+          score += i * 2;
+        }
+      }
+    }
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestIdx = idx;
+    }
+  }
+
+  return bestIdx;
+}
+
 function renderTextWithAnnotations(
   text: string,
   annotations: NoteAnnotation[] = [],
   onAnnotationClick?: (annotation: NoteAnnotation, e: React.MouseEvent) => void,
+  currentLineIndex?: number,
 ) {
   if (!annotations || annotations.length === 0 || !text) {
     return parseBoldText(text);
   }
 
-  const matchingAnnotations = annotations.filter(
-    (ann) => ann.text && text.includes(ann.text),
-  );
+  const matchingAnnotations = annotations.filter((ann) => {
+    if (!ann.text) return false;
+    if (ann.lineIndex !== undefined && currentLineIndex !== undefined) {
+      return ann.lineIndex === currentLineIndex && text.includes(ann.text);
+    }
+    return text.includes(ann.text);
+  });
 
   if (matchingAnnotations.length === 0) {
     return parseBoldText(text);
   }
 
-  const sorted = [...matchingAnnotations].sort(
-    (a, b) => text.indexOf(a.text) - text.indexOf(b.text),
-  );
+  const ranges: MatchRange[] = [];
+
+  for (const ann of matchingAnnotations) {
+    const matchIndex = findBestMatchIndex(
+      text,
+      ann.text,
+      ann.prefix,
+      ann.suffix,
+      ranges,
+    );
+
+    if (matchIndex !== -1) {
+      const end = matchIndex + ann.text.length;
+      ranges.push({ start: matchIndex, end, annotation: ann });
+    }
+  }
+
+  if (ranges.length === 0) {
+    return parseBoldText(text);
+  }
+
+  ranges.sort((a, b) => a.start - b.start);
 
   const elements: React.ReactNode[] = [];
-  let remainingText = text;
+  let currentIndex = 0;
   let keyIdx = 0;
 
-  for (const ann of sorted) {
-    const idx = remainingText.indexOf(ann.text);
-    if (idx === -1) continue;
-
-    const before = remainingText.slice(0, idx);
-    const match = remainingText.slice(idx, idx + ann.text.length);
-    remainingText = remainingText.slice(idx + ann.text.length);
-
-    if (before) {
+  for (const range of ranges) {
+    if (range.start > currentIndex) {
+      const before = text.slice(currentIndex, range.start);
       elements.push(
         <React.Fragment key={`text-${keyIdx++}`}>
           {parseBoldText(before)}
@@ -86,21 +171,25 @@ function renderTextWithAnnotations(
       );
     }
 
+    const matchedText = text.slice(range.start, range.end);
     elements.push(
       <NoteAnnotationHighlight
-        key={`ann-${ann.id}-${keyIdx++}`}
-        annotation={ann}
+        key={`ann-${range.annotation.id}-${keyIdx++}`}
+        annotation={range.annotation}
         onClick={(clickedAnn, e) => onAnnotationClick?.(clickedAnn, e)}
       >
-        {parseBoldText(match)}
+        {parseBoldText(matchedText)}
       </NoteAnnotationHighlight>,
     );
+
+    currentIndex = range.end;
   }
 
-  if (remainingText) {
+  if (currentIndex < text.length) {
+    const after = text.slice(currentIndex);
     elements.push(
       <React.Fragment key={`text-${keyIdx++}`}>
-        {parseBoldText(remainingText)}
+        {parseBoldText(after)}
       </React.Fragment>,
     );
   }
@@ -125,24 +214,51 @@ export function NoteMarkdownRenderer({
         if (trimmed.startsWith('#### ')) {
           const headerContent = trimmed.replace('#### ', '');
           return (
-            <h5 key={index} className="text-[11px] font-bold text-zinc-800 dark:text-zinc-250 mt-4 mb-2 uppercase tracking-wider">
-              {renderTextWithAnnotations(headerContent, annotations, onAnnotationClick)}
+            <h5
+              key={index}
+              data-line-index={index}
+              className="text-[11px] font-bold text-zinc-800 dark:text-zinc-250 mt-4 mb-2 uppercase tracking-wider"
+            >
+              {renderTextWithAnnotations(
+                headerContent,
+                annotations,
+                onAnnotationClick,
+                index,
+              )}
             </h5>
           );
         }
         if (trimmed.startsWith('### ')) {
           const headerContent = trimmed.replace('### ', '');
           return (
-            <h4 key={index} className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mt-5 mb-2.5 pb-1 border-b border-zinc-200/50 dark:border-zinc-850/40">
-              {renderTextWithAnnotations(headerContent, annotations, onAnnotationClick)}
+            <h4
+              key={index}
+              data-line-index={index}
+              className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mt-5 mb-2.5 pb-1 border-b border-zinc-200/50 dark:border-zinc-850/40"
+            >
+              {renderTextWithAnnotations(
+                headerContent,
+                annotations,
+                onAnnotationClick,
+                index,
+              )}
             </h4>
           );
         }
         if (trimmed.startsWith('## ')) {
           const headerContent = trimmed.replace('## ', '');
           return (
-            <h3 key={index} className="text-base font-semibold text-foreground mt-6 mb-3.5 tracking-tight">
-              {renderTextWithAnnotations(headerContent, annotations, onAnnotationClick)}
+            <h3
+              key={index}
+              data-line-index={index}
+              className="text-base font-semibold text-foreground mt-6 mb-3.5 tracking-tight"
+            >
+              {renderTextWithAnnotations(
+                headerContent,
+                annotations,
+                onAnnotationClick,
+                index,
+              )}
             </h3>
           );
         }
@@ -150,8 +266,16 @@ export function NoteMarkdownRenderer({
           const bulletContent = trimmed.replace('- ', '');
           return (
             <ul key={index} className="list-disc pl-5 my-1">
-              <li className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
-                {renderTextWithAnnotations(bulletContent, annotations, onAnnotationClick)}
+              <li
+                data-line-index={index}
+                className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium"
+              >
+                {renderTextWithAnnotations(
+                  bulletContent,
+                  annotations,
+                  onAnnotationClick,
+                  index,
+                )}
               </li>
             </ul>
           );
@@ -160,11 +284,25 @@ export function NoteMarkdownRenderer({
           return <div key={index} className="h-2" />;
         }
         if (trimmed === '---') {
-          return <hr key={index} className="my-4 border-zinc-200/50 dark:border-zinc-800/40" />;
+          return (
+            <hr
+              key={index}
+              className="my-4 border-zinc-200/50 dark:border-zinc-800/40"
+            />
+          );
         }
         return (
-          <p key={index} className="text-sm text-zinc-700 dark:text-zinc-300 my-1 leading-relaxed font-medium">
-            {renderTextWithAnnotations(line, annotations, onAnnotationClick)}
+          <p
+            key={index}
+            data-line-index={index}
+            className="text-sm text-zinc-700 dark:text-zinc-300 my-1 leading-relaxed font-medium"
+          >
+            {renderTextWithAnnotations(
+              line,
+              annotations,
+              onAnnotationClick,
+              index,
+            )}
           </p>
         );
       })}
